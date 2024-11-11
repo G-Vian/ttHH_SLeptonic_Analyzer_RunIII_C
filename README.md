@@ -10,6 +10,8 @@ Note that lxplus does not support the el7 environment directly now, so you’ll 
 - Important: Since Singularity doesn’t support job submissions to Condor, use lxplus8 or lxplus9 servers for submitting jobs.
 - Libraries: ***ROOT, GSL, and LHAPDF***. cmssw-el7 and CMSSW_10_6_28 are suggested for this purpose.
 - TTH libraries: Install tar files
+
+
 &#9655;	To set up the cmssw environment & install the analyzer:
 ```bash
 # In lxplus..
