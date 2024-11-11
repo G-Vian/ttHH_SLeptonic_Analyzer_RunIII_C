@@ -9,7 +9,7 @@ A Scientific Linux 7 is required for compiling this code.
 Note that lxplus does not support the el7 environment directly now, so you’ll need to use Singularity with the ```cmssw-el7``` command. If you want to use a different OS version, be sure to update the variables and libraries in **Makefile**.
 - Important: Since Singularity doesn’t support job submissions to Condor, use lxplus8 or lxplus9 servers for submitting jobs.
 - Libraries: ***ROOT, GSL, and LHAPDF***. cmssw-el7 and CMSSW_10_6_28 are suggested for this purpose.
-
+- TTH libraries: Install tar files
 &#9655;	To set up the cmssw environment & install the analyzer:
 ```bash
 # In lxplus..
@@ -17,6 +17,8 @@ cmssw-el7
 cmsrel CMSSW_10_6_28
 cd CMSSW_10_6_28/src && cmsenv
 git clone https://github.com/Junghyun-Lee-Physicist/ttHHAnalyzer.git
+cp /eos/user/j/junghyun/public/TTH.tar.gz .
+tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz
 ```
 
 ## Compilation to make execution file
