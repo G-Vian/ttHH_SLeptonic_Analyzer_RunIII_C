@@ -21,6 +21,7 @@ cd CMSSW_10_6_28/src && cmsenv
 git clone https://github.com/Junghyun-Lee-Physicist/ttHHAnalyzer.git
 cp /eos/user/j/junghyun/public/TTH.tar.gz .
 tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz
+mv TTH CMSSW_10_6_28/src/ttHHAnalyzer/.
 ```
 
 ## Compilation to make execution file
