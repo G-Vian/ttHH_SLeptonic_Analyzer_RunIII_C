@@ -1,0 +1,27 @@
+#include "TTH/CommonClassifier/interface/thhHypothesisCombinatorics.h"
+
+
+thhHypothesisCombinatorics::thhHypothesisCombinatorics(const std::string& weightpath, const std::string& optional_varstring):
+HypothesisCombinatorics(optional_varstring)
+{
+    HypothesisCombinatorics::minJets = minJets;
+    reader_th.reset(new TMVA::Reader( "!Color:!Silent" ));
+    mvars.reset(new MVAvarsJABDTthh());
+
+    bdt_name = "tHH JABDT";
+    bdtoutput_name = "Reco_tHH_bestJABDToutput";
+
+    // setup input variables for TMVA factory
+    FillVariableNameList(optional_varstring, BDTlabels);
+    for (unsigned ivar=0;ivar<BDTlabels.size();ivar++){
+        reader_th->AddVariable(BDTlabels.at(ivar).c_str(), mvars->GetAdress(BDTlabels[ivar]));
+        cout << "added variable to JABDT:" << BDTlabels.at(ivar).c_str() <<endl;
+    }
+
+    reader_th->BookMVA(bdt_name, weightpath);
+}
+
+thhHypothesisCombinatorics::~thhHypothesisCombinatorics(){}
+
+PermutationManager thhHypothesisCombinatorics::permutator(minJets, 18);
+

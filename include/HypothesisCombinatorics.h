@@ -1,0 +1,51 @@
+#ifndef TTH_HYPOTHESISCOMBINATORICS_H
+#define TTH_HYPOTHESISCOMBINATORICS_H
+
+#include <vector>
+#include <map>
+#include "TLorentzVector.h"
+#include "TString.h"
+#include "TObjArray.h"
+#include "TObjString.h"
+#include "TMVA/Reader.h"
+// #include "TMVA/PyMethodBase.h"
+#include "TTH/CommonClassifier/interface/MVAvarsBase.h"
+#include "TTH/CommonClassifier/interface/PermutationManager.h"
+// #include "TTH/CommonClassifier/interface/BDTJAClassifier.h"
+
+// class to evaluate lepton plus jets BDT set
+class HypothesisCombinatorics{
+public:
+
+    HypothesisCombinatorics(const std::string& bdt_input_vars);
+    virtual ~HypothesisCombinatorics();
+
+    // setting the public function purely virtual forces the user to declare this function in a daughter class
+    virtual std::map<std::string, float> GetBestPermutation(const std::vector<TLorentzVector> &selectedLeptonP4,
+                                                            const std::vector<TLorentzVector> &selectedJetP4,
+                                                            const std::vector<double> &selectedJetCSV,
+                                                            const TLorentzVector &metP4);
+
+    std::vector<std::string> GetVariableNames() const;
+    float* GetAdress(std::string variablelabel){return mvars->GetAdress(variablelabel);}
+    void SetBtagWP(const double& in_btagWP);
+    void SetBtagLooseWP(const double& in_btagLooseWP);
+
+    bool IsCentral(const TLorentzVector& vec, const double& central_eta_cut = 2.4){return abs(vec.Eta())<central_eta_cut;}
+
+protected:
+    void FillVariableNameList(const TString& variables, std::vector<std::string>& vec_to_fill);
+    virtual PermutationManager* getPermutator(){cout << "ERROR: Base class has no permutator" << endl; return nullptr;}
+
+    std::vector<std::string> optional_varlist = std::vector<std::string>();
+    double btagWP;
+    std::unique_ptr<TMVA::Reader> reader_th;
+    std::unique_ptr<MVAvarsBase> mvars;
+    std::string bdtoutput_name;
+    std::string bdt_name;
+
+    std::vector<std::string> BDTlabels;
+    unsigned int minJets;
+};
+
+#endif

@@ -1,0 +1,3452 @@
+#include "Integrand.h"
+#include "LHAPDF/LHAPDF.h"
+#include <string>
+//INITIALIZE_EASYLOGGINGPP
+#define GOOD_VEC(v) (v.Pt() > 0 && v.Pt() < 99999)
+
+/**
+ Converts a vector of type T to a string concatenated with a separator.
+ */
+template <typename T>
+string vec_to_string(std::vector<T> vec, string sep = ",") {
+  ostringstream os;
+  for (auto v : vec) {
+    os << v << sep;
+  }
+  return os.str();
+}
+
+void print_point(std::vector<MEM::Object *> obs_leptons, std::vector<MEM::Object *> obs_jets, std::vector<MEM::Object *> obs_mets, MEM::Hypothesis::Hypothesis hypo) {
+
+  cout << "---" << endl;
+  cout << "point " << hypo << " ";
+  for (auto* obj : obs_leptons) {
+    double pt_reco=0, eta_reco=0, phi_reco=0, mass_reco=0;
+    pt_reco = obj->p4().Pt();
+    eta_reco = obj->p4().Eta();
+    phi_reco = obj->p4().Phi();
+    mass_reco = obj->p4().M();
+    cout << pt_reco << " " << eta_reco << " " << phi_reco << " " << mass_reco << " " << obj->getObs(MEM::Observable::CHARGE) << " ";
+  }
+  
+  for (auto* obj : obs_mets) {
+    double pt_reco=0, phi_reco=0;
+    pt_reco = obj->p4().Pt();
+    phi_reco = obj->p4().Phi();
+    cout << pt_reco << " " << phi_reco << " ";
+  }
+  
+  for (auto* obj : obs_jets) {
+    double pt_reco=0, eta_reco=0, phi_reco=0, mass_reco=0;
+    pt_reco = obj->p4().Pt();
+    eta_reco = obj->p4().Eta();
+    phi_reco = obj->p4().Phi();
+    mass_reco = obj->p4().M();
+    cout << pt_reco << " " << eta_reco << " " << phi_reco << " " << mass_reco << " " << obj->getObs(MEM::Observable::BTAG) << " ";
+  }
+  cout << endl;
+
+  return;
+}
+
+class CubaUserData {
+public:
+  MEM::Integrand* integrand;
+  double* xL;
+  double* xU;
+  double mult;
+  int only_this_perm;
+  int max_permutation;
+  TRandom* random;
+};
+
+MEM::Integrand::Integrand(int debug, const MEMConfig &config)
+    : tf_map(config.tf_map), btag_pdfs(config.btag_pdfs) {
+  // establish invariants
+  debug_code = debug;
+  error_code = 0;
+  num_of_vars = 0;
+  ps_dim = 0;
+  naive_jet_counting = 0;
+  extra_jets = 0;
+  cfg = config;
+  fs = FinalState::Undefined;
+  hypo = Hypothesis::Undefined;
+  ig2 = nullptr;
+  minimizer = nullptr;
+  prefit_step = 0;
+  n_calls = 0;
+  n_calls_perm = 0;
+  n_max_calls = 0;
+  n_skip = 0;
+  this_perm = 0;
+  n_perm_max = 0;
+  prefit_code = 0;
+  tf_zero = 0;
+  comparator = CompPerm();
+  scattering_counter = 0; 
+  
+  // init PDF set
+  LOG(INFO) << cfg.pdfset << endl;
+  //LHAPDF::initPDFSet(0,(std::string) cfg.pdfset.c_str());
+
+
+  const string cmssw_path(std::getenv("CMSSW_BASE"));
+  const string scram_arch(std::getenv("SCRAM_ARCH"));
+  const string install_path = (cmssw_path + string("/lib/") + scram_arch);
+
+  ol_setparameter_string("install_path", install_path.c_str());
+
+  // Set parameter: Z mass
+  ol_setparameter_double("mass(6)", MEM::MTOP);
+  // ol_setparameter_double("psp_tolerance", 0.001);
+
+  ol_setparameter_int("verbose", 0);
+
+  // ttH
+  ol_setparameter_int("order_ew", 1);
+  processes[Process::TTH] = ol_register_process("21 21 -> 25 6 -6", 1);  // tth
+//  processes[Process::TTHj] =
+//      ol_register_process("21 21 -> 25 6 -6 21", 1);  // tthg
+
+  // ttbb
+  ol_setparameter_int("order_ew", 0);
+  processes[Process::TTBB] =
+      ol_register_process("21 21 -> 6 -6 5 -5", 1);  // ttbb
+//  processes[Process::TTBBj] =
+//      ol_register_process("21 21 -> 6 -6 5 -5 21", 1);  // ttbbg
+
+  //configure cuba
+  cubacores(cfg.cuba_cores, 10000);
+
+  if (cfg.interpolate_pdf) {
+    //Precompute PDF on a grid
+    for (int i=0; i<NUM_PDF_INTERP; i++) {
+      this->pdf_interp_x[i] = 1.0/double(NUM_PDF_INTERP) * (double)i;
+      this->pdf_interp_y[i] = 300 + (2000.0)/NUM_PDF_INTERP * (double)i;
+    }
+    for (int i=0; i<NUM_PDF_INTERP; i++) {
+        this->pdf_interp_q_sig[i] = LHAPDF::xfx(0, this->pdf_interp_x[i], (2 * MTOP + MH) / 2, 0);
+        for (int j=0; j<NUM_PDF_INTERP; j++) {
+            this->pdf_interp_z[i][j] = LHAPDF::xfx(0, this->pdf_interp_x[i], this->pdf_interp_y[j], 0);
+        }
+    }
+
+    pdf_interpolator_q_sig = gsl_interp_alloc(gsl_interp_linear, NUM_PDF_INTERP);
+    pdf_interpolator_q_bkg = gsl_interp2d_alloc(gsl_interp2d_bilinear, NUM_PDF_INTERP, NUM_PDF_INTERP);
+    pdf_interpolator_accel_x = gsl_interp_accel_alloc();
+    pdf_interpolator_accel_y = gsl_interp_accel_alloc();
+  }
+
+  //el::Configurations defaultConf;
+  //defaultConf.setToDefault();
+  //defaultConf.set(el::Level::Info, el::ConfigurationType::Format,
+  //                "%datetime %level %msg");
+  //el::Loggers::reconfigureLogger("default", defaultConf);
+  //el::Loggers::setVerboseLevel(debug);
+}
+
+MEM::Integrand::~Integrand() {
+  obs_jets.clear();
+  obs_leptons.clear();
+  obs_mets.clear();
+  perm_index.clear();
+  for (auto p : perm_indexes_assumption) {
+    p.clear();
+  }
+  perm_indexes_assumption.clear();
+  perm_const_assumption.clear();
+  perm_btag_assumption.clear();
+  perm_btag_bb_assumption.clear();
+  perm_btag_jj_assumption.clear();
+  perm_btag_cc_assumption.clear();
+  perm_tmpval_assumption.clear();
+  perm_pruned.clear();
+  map_to_var.clear();
+  map_to_part.clear();
+  if (ig2 != nullptr) {
+    delete ig2;
+    ig2 = nullptr;
+  }
+  if (minimizer != nullptr) {
+    delete minimizer;
+    minimizer = nullptr;
+  }
+}
+
+/*
+   Initialise parameters (***once per event***)
+   - determine final state
+   - save jet informations
+   - create list of permutations
+   - determine number of variables
+*/
+void MEM::Integrand::init(const MEM::FinalState::FinalState f,
+                          const MEM::Hypothesis::Hypothesis h) {
+  // set hypothesis to be tested
+  hypo = h;
+  fs = f;
+
+  if (!(int(obs_leptons.size()) ==
+        (0 * (fs == FinalState::HH || fs == FinalState::TTH) +
+         1 * (fs == FinalState::LH) + 2 * (fs == FinalState::LL)))) {
+    LOG(ERROR) << "Wrong number of leptons supplied: nl=" << obs_leptons.size()
+               << " hypo=" << fs;
+  };
+
+  // a class member: used to keep track of how many quarks are expected
+  naive_jet_counting = 8 * (fs == FinalState::HH) + 6 * (fs == FinalState::LH) +
+                       4 * (fs == FinalState::LL) + 0 * (fs == FinalState::TTH);
+
+  // deal with jets:
+  // if less jets are recorded than the naive_jet_counting,
+  // fill in perm_index with -1;
+  const size_t n_jets = obs_jets.size();
+
+  // fill the permutation word
+  // it will contain the indexes of the observed jets
+  perm_index.clear();
+  for (size_t id = 0; id < n_jets; ++id) {
+    perm_index.push_back((int)id);
+  }
+
+  // and -1 for any jets that were expected but not observed
+  while (perm_index.size() < naive_jet_counting) {
+    perm_index.push_back(-1);
+  }
+
+  const bool external_tf = (cfg.transfer_function_method == TFMethod::External);
+  // calculate upper / lower edges of the integration boundares
+  for (auto &j : obs_jets) {
+    if (external_tf && j->getNumTransferFunctions() == 0) {
+      LOG(ERROR) << "TFMethod::External specified in cfg but jet supplied "
+                 << j->getNumTransferFunctions() << " transfer functions";
+    }
+    // smear gen jets by TF
+
+    Object *obj = nullptr;
+    double y[2] = {j->p4().E(), j->p4().Eta()};
+
+    // In case using external TF, use Pt (FIXME: unify with internal TF).
+    if (external_tf) {
+      y[0] = j->p4().Pt();
+      obj = j;
+    }
+
+    pair<double, double> edges;
+    if (!j->isSet(Observable::E_LOW_Q) || !j->isSet(Observable::E_HIGH_Q)) {
+      edges = get_support(y, TFType::qReco, cfg.j_range_CL, debug_code, obj, false);
+      j->addObs(Observable::E_LOW_Q, edges.first);
+      j->addObs(Observable::E_HIGH_Q, edges.second);
+    }
+    if (!j->isSet(Observable::E_LOW_B) || !j->isSet(Observable::E_HIGH_B)) {
+      edges = get_support(y, TFType::bReco, cfg.b_range_CL, debug_code, obj, false);
+      j->addObs(Observable::E_LOW_B, edges.first);
+      j->addObs(Observable::E_HIGH_B, edges.second);
+    }
+  }  // end loop over obs_jets
+
+  // sort permutations and compute maximum number of permutations
+  comparator = CompPerm(cfg.highpt_first);
+  sort(perm_index.begin(), perm_index.end(), comparator);
+  vector<int> perm_index_copy = perm_index;
+  n_perm_max = 0;
+  do {
+    ++n_perm_max;
+  } while (next_permutation(perm_index_copy.begin(), perm_index_copy.end(),
+                            comparator));
+
+  VLOG(1) << "Maximum of " << n_perm_max << " permutation(s) considered";
+
+  // are we looking at decays of top and higgs?
+  const int unstable =
+      (fs == FinalState::LH || fs == FinalState::LL || fs == FinalState::HH);
+
+  // Formula to get the number of unknowns
+  // The number of variables is equal to npar - 2*extra_jets
+  if (unstable) {
+    ps_dim = (3 +  // top: 2x W daughters, b
+              3 +  // antitop: 2x W daughters, b
+              2);  // bb
+  } else {
+    if (hypo == Hypothesis::TTH) {
+      ps_dim = 3;
+    } else if (hypo == Hypothesis::TTBB) {
+      ps_dim = 4;
+    }
+  }
+
+  num_of_vars =
+      // dimension of the phase-space
+      3 * ps_dim
+      // lepton pt, eta, phi
+      - 3 * obs_leptons.size()
+      // jet eta, phi
+      - 2 * naive_jet_counting
+      // t, tbar, W1, W2 mass
+      - 4 * (unstable)
+      // H mass
+      - 1 * (hypo == Hypothesis::TTH && unstable)
+      // MET Px/Py
+      - 2 * (obs_mets.size() == 0);
+
+  VLOG(1) << "Total of " << num_of_vars
+           << " unknowns (does not take into account lost jets)";
+  VLOG(1) << "Integration code: " << cfg.int_code;
+
+  return;
+}
+
+/**
+Searches for the n-th element inside the perm_index vector
+*/
+vector<int> MEM::Integrand::get_permutation(size_t n) {
+  // make a copy here because looping over with next_permutation changes the
+  // list
+  vector<int> perm_index_copy = perm_index;
+  std::size_t n_perm{0};
+  do {
+    if (n == n_perm) {
+#ifdef DEBUG_MODE
+      if (VLOG_IS_ON(3)) {
+        ostringstream os;
+        for (auto ind : perm_index_copy) {
+          os << ind << " ";
+        }
+        VLOG(3) << "\tperm. " << n_perm << ": [ " << os.str() << " ]";
+      }
+#endif
+      return perm_index_copy;
+    }
+    ++n_perm;
+  } while (next_permutation(perm_index_copy.begin(), perm_index_copy.end(),
+                            comparator));
+  // dummy return
+  // FIXME: should throw here?
+  return vector<int>{};
+}
+
+void MEM::Integrand::get_edges(double *lim,
+                               const std::vector<PSVar::PSVar> &lost,
+                               size_t nvar, size_t edge) {
+  // for lost particles, the convention is by the particle index
+  //   even <=> cosTheta [-1,   +1]
+  //   odd  <=> phi      [-PI, +PI]
+  size_t count_extra{0};
+  pair<double, double> phi_edges = {-TMath::Pi(), +TMath::Pi()};
+
+  double y[2] = {obs_mets.at(0)->p4().Px(), obs_mets.at(0)->p4().Py()};
+
+  switch (fs) {
+    case FinalState::LH:
+      if (cfg.m_range_CL < 1.) {
+        phi_edges =
+            get_support(y, TFType::MET,
+                        (edge ? +cfg.m_range_CL : -cfg.m_range_CL), debug_code);
+      }
+      // work-around for events with very high MET, in which case the MET phi
+      // edges are not correctly found
+      // in this case, reverse the edges here if they are in the wrong order
+      // https://github.com/cms-ttH/CommonClassifier/issues/7
+      if ((edge == 0 && phi_edges.first > 0) ||
+          (edge == 1 && phi_edges.first < 0)) {
+        phi_edges.first = -TMath::Pi();
+        phi_edges.second = +TMath::Pi();
+      }
+      lim[map_to_var[PSVar::E_q1]] = edge ? 1. : 0.;
+      lim[map_to_var[PSVar::cos_qbar2]] = edge ? +1 : -1.;
+      lim[map_to_var[PSVar::phi_qbar2]] =
+          edge ? phi_edges.second : phi_edges.first;
+      lim[map_to_var[PSVar::E_b]] = edge ? 1. : 0.;
+      if (hypo == Hypothesis::TTBB)
+        lim[map_to_var[PSVar::E_bbar]] = edge ? 1. : 0.;
+      for (auto l = lost.begin(); l != lost.end(); ++l) {
+        if (edge) {
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? +1 : +TMath::Pi();
+        } else {
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? -1 : -TMath::Pi();
+        }
+        ++count_extra;
+      }
+      break;
+    case FinalState::LL:
+      lim[map_to_var[PSVar::cos_qbar1]] = edge ? +1 : -1.;
+      lim[map_to_var[PSVar::phi_qbar1]] = edge ? +TMath::Pi() : -TMath::Pi();
+      lim[map_to_var[PSVar::cos_qbar2]] = edge ? +1 : -1.;
+      lim[map_to_var[PSVar::phi_qbar2]] = edge ? +TMath::Pi() : -TMath::Pi();
+      lim[map_to_var[PSVar::E_b]] = edge ? 1. : 0.;
+      if (hypo == Hypothesis::TTBB)
+        lim[map_to_var[PSVar::E_bbar]] = edge ? 1. : 0.;
+      for (auto l = lost.begin(); l != lost.end(); ++l) {
+        if (edge)
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? +1 : +TMath::Pi();
+        else
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? -1 : -TMath::Pi();
+        ++count_extra;
+      }
+      break;
+    case FinalState::HH:
+      lim[map_to_var[PSVar::E_q1]] = edge ? 1. : 0.;
+      lim[map_to_var[PSVar::E_q2]] = edge ? 1. : 0.;
+      lim[map_to_var[PSVar::E_b]] = edge ? 1. : 0.;
+      if (hypo == Hypothesis::TTBB)
+        lim[map_to_var[PSVar::E_bbar]] = edge ? 1. : 0.;
+      for (auto l = lost.begin(); l != lost.end(); ++l) {
+        if (edge)
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? +1 : +TMath::Pi();
+        else
+          lim[map_to_var[*l]] = count_extra % 2 == 0 ? -1 : -TMath::Pi();
+        ++count_extra;
+      }
+      break;
+    case FinalState::TTH:
+      lim[map_to_var[PSVar::P_t]] = edge ? cfg.emax : 0.;
+      lim[map_to_var[PSVar::cos_t]] =
+          edge ? +0.99 : -0.99;  // 0.9 corresponds to |eta|<4.5
+      lim[map_to_var[PSVar::phi_t]] = edge ? +TMath::Pi() : -TMath::Pi();
+      lim[map_to_var[PSVar::P_tbar]] = edge ? cfg.emax : 0.;
+      lim[map_to_var[PSVar::cos_tbar]] = edge ? +0.99 : -0.99;
+      lim[map_to_var[PSVar::phi_tbar]] = edge ? +TMath::Pi() : -TMath::Pi();
+      lim[map_to_var[PSVar::Pz_h]] = edge ? cfg.emax / 2 : -cfg.emax / 2;
+      break;
+    default:
+      break;
+  }
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(2)) {
+    VLOG(2) << "\tIntegrand::get_edges(): SUMMARY" << endl;
+    ostringstream os;
+    for (size_t i = 0; i < nvar; ++i) {
+      os << lim[i] << " ";
+    }
+    VLOG(2) << (edge ? "\t\tH" : "\t\tL") << " edges: [ " << os.str() << "]";
+  }
+#endif
+}
+
+double MEM::Integrand::get_width(const double *xL, const double *xU,
+                                 const size_t nvar) {
+  double out{1.};
+  for (size_t i = 0; i < nvar; ++i) out *= TMath::Abs(xU[i] - xL[i]);
+  return out;
+}
+
+void MEM::Integrand::fill_map(const std::vector<PSVar::PSVar> &lost) {
+  size_t psvar_idx{0};
+  if (fs == FinalState::LH) {
+    // jet <-> quark
+    map_to_part[PSPart::q2] = 0;         // lepton
+    map_to_part[PSPart::q1] = 0;         // jet
+    map_to_part[PSPart::qbar1] = 1;      // jet
+    map_to_part[PSPart::b1] = 2;         // jet
+    map_to_part[PSPart::b2] = 3;         // jet
+    map_to_part[PSPart::b] = 4;          // jet
+    map_to_part[PSPart::bbar] = 5;       // jet
+    map_to_part[PSPart::gluon_rad] = 6;  // radiation jet
+
+    // PS variable <-> VEGAS variable
+    vector<PSVar::PSVar> psvars(
+        {PSVar::E_q1, PSVar::cos_qbar2, PSVar::phi_qbar2, PSVar::E_b});
+
+    // Need to also integrate over mass of other quark as Higgs mass is no
+    // constraint
+    if (hypo == Hypothesis::TTBB) {
+      psvars.push_back(PSVar::E_bbar);
+    }
+
+    for (auto psvar : psvars) {
+      map_to_var[psvar] = psvar_idx;
+      psvar_idx += 1;
+    }
+
+    // Add integration over lost quark properties
+    for (auto l : lost) {
+      map_to_var[l] = psvar_idx;
+      psvar_idx += 1;
+    }
+  } else if (fs == FinalState::LL) {
+    // jet <-> quark
+    map_to_part[PSPart::q1] = 0;    // lepton
+    map_to_part[PSPart::q2] = 1;    // lepton
+    map_to_part[PSPart::b1] = 0;    // jet
+    map_to_part[PSPart::b2] = 1;    // jet
+    map_to_part[PSPart::b] = 2;     // jet
+    map_to_part[PSPart::bbar] = 3;  // jet
+
+    // PS variable <-> VEGAS variable
+    map_to_var[PSVar::cos_qbar1] = 0;  // cosNu
+    map_to_var[PSVar::phi_qbar1] = 1;  // phiNu
+    map_to_var[PSVar::cos_qbar2] = 2;  // cosNu
+    map_to_var[PSVar::phi_qbar2] = 3;  // phiNu
+    map_to_var[PSVar::E_b] = 4;        // Eb
+    if (hypo == Hypothesis::TTBB) map_to_var[PSVar::E_bbar] = 5;
+    psvar_idx = 5 + (hypo == Hypothesis::TTBB);
+    for (auto l = lost.begin(); l != lost.end(); ++l)
+      map_to_var[*l] = psvar_idx++;
+
+  } else if (fs == FinalState::HH) {
+    // jet <-> quark
+    map_to_part[PSPart::q1] = 0;     // jet
+    map_to_part[PSPart::qbar1] = 1;  // jet
+    map_to_part[PSPart::b1] = 2;     // jet
+    map_to_part[PSPart::q2] = 3;     // jet
+    map_to_part[PSPart::qbar2] = 4;  // jet
+    map_to_part[PSPart::b2] = 5;     // jet
+    map_to_part[PSPart::b] = 6;      // jet
+    map_to_part[PSPart::bbar] = 7;   // jet
+
+    // PS variable <-> VEGAS variable
+    map_to_var[PSVar::E_q1] = 0;  // Eq
+    map_to_var[PSVar::E_q2] = 1;  // Eq
+    map_to_var[PSVar::E_b] = 2;   // Eb
+    if (hypo == Hypothesis::TTBB) map_to_var[PSVar::E_bbar] = 3;
+    psvar_idx = 3 + (hypo == Hypothesis::TTBB);
+    for (auto l = lost.begin(); l != lost.end(); ++l)
+      map_to_var[*l] = psvar_idx++;
+
+  } else if (fs == FinalState::TTH) {
+    // PS variable <-> VEGAS variable
+    map_to_var[PSVar::P_t] = 0;
+    map_to_var[PSVar::cos_t] = 1;
+    map_to_var[PSVar::phi_t] = 2;
+    map_to_var[PSVar::P_tbar] = 3;
+    map_to_var[PSVar::cos_tbar] = 4;
+    map_to_var[PSVar::phi_tbar] = 5;
+    map_to_var[PSVar::Pz_h] = 6;
+  }
+
+  if (VLOG_IS_ON(2)) {
+    VLOG(2) << "Integrand::fill_map(): SUMMARY";
+    VLOG(2) << "Mapping between phase-space variables and VEGAS variables:";
+    ostringstream os;
+    for (auto iter = map_to_var.begin(); iter != map_to_var.end(); ++iter) {
+      os << "PS[" << static_cast<int>(iter->first) << "] maps to x["
+         << iter->second << "]";
+    }
+    VLOG(2) << os.str();
+    VLOG(2) << "Mapping between quarks and objects in the permuted obs_ "
+               "collections:"
+            << endl;
+    ostringstream os2;
+    for (auto iter = map_to_part.begin(); iter != map_to_part.end(); ++iter) {
+      os2 << "Particle (" << static_cast<int>(iter->first)
+          << ") maps to position " << iter->second << endl;
+    }
+    VLOG(2) << os2.str();
+  }
+
+  return;
+}
+
+void MEM::Integrand::push_back_object(const LV &p4,
+                                      const MEM::ObjectType::ObjectType &type) {
+  Object *obj = new Object(p4, type);
+
+  switch (type) {
+    case ObjectType::Jet:
+      obs_jets.push_back(obj);
+      break;
+    case ObjectType::Lepton:
+      obs_leptons.push_back(obj);
+      break;
+    case ObjectType::MET:
+      obs_mets.push_back(obj);
+      break;
+    default:
+      LOG(ERROR)
+          << "*** MEM::Intgrator::push_back_object(): Unknown type of object "
+             "added"
+          << type;
+      throw std::runtime_error(
+          "MEM::Intgrator::push_back_object() unknown object type");
+      break;
+  }
+
+#ifdef DEBUG_MODE
+    ostringstream os;
+    obj->print(os);
+    VLOG(2) << "Integrand::push_back_object(): SUMMARY " << os.str() << endl;
+#endif
+
+  return;
+}
+
+void MEM::Integrand::push_back_object(MEM::Object *obj) {
+  switch (obj->type()) {
+    case ObjectType::Jet:
+      obs_jets.push_back(obj);
+      break;
+    case ObjectType::Lepton:
+      obs_leptons.push_back(obj);
+      break;
+    case ObjectType::MET:
+      obs_mets.push_back(obj);
+      break;
+    default:
+      LOG(ERROR) << "Unknown type of object added";
+      throw std::runtime_error("Unknown type of object");
+      break;
+  }
+
+#ifdef DEBUG_MODE
+  ostringstream os;
+  obj->print(os);
+  LOG(DEBUG) << "Integrand::fill_map(): SUMMARY" << os.str();
+#endif
+
+  return;
+}
+
+void MEM::Integrand::add_object_observable(
+    const std::pair<MEM::Observable::Observable, double> &obs,
+    const ObjectType::ObjectType &type) {
+  switch (type) {
+    case ObjectType::Jet:
+      if (obs_jets.size() > 0) (obs_jets.back())->addObs(obs.first, obs.second);
+      break;
+    case ObjectType::Lepton:
+      if (obs_leptons.size() > 0)
+        (obs_leptons.back())->addObs(obs.first, obs.second);
+      break;
+    case ObjectType::MET:
+      if (obs_mets.size() > 0) (obs_mets.back())->addObs(obs.first, obs.second);
+      break;
+    default:
+      cerr
+          << "Integrand::add_object_observables(): Unknown type of object added"
+          << endl;
+      break;
+  }
+
+  return;
+}
+
+// void MEM::Integrand::set_integrand(const int code) { cfg.int_code = code; }
+//
+// void MEM::Integrand::set_ncalls(const size_t &n) {
+//  cfg.n_max_calls = n;
+//  cfg.is_default = false;
+//}
+//
+// void MEM::Integrand::set_sqrts(const double &s) { cfg.sqrts = s; }
+//
+void MEM::Integrand::set_hypo(const MEM::Hypothesis::Hypothesis h) { hypo = h; }
+
+// FIXME: verify that this is safe
+void MEM::Integrand::set_cfg(const MEMConfig &config) { cfg = config; }
+
+//// void MEM::Integrand::set_permutation_strategy(const
+//// std::vector<MEM::Permutations>& str){
+// void MEM::Integrand::set_permutation_strategy(
+//    const std::vector<MEM::Permutations::Permutations> &str) {
+//  cfg.perm_pruning = str;
+//}
+
+MEM::MEMOutput MEM::Integrand::run(const MEM::FinalState::FinalState f,
+                                   const MEM::Hypothesis::Hypothesis h,
+                                   const std::vector<MEM::PSVar::PSVar> missed,
+                                   const std::vector<MEM::PSVar::PSVar> any,
+                                   int ncalls) {
+
+  // the output for this evaluation
+  MEMOutput out;
+
+  // start the clock....
+  auto t0 = high_resolution_clock::now();
+
+  // prepare permutation, count variables
+  init(f, h);
+
+  // clock for init timing
+  //auto t01 = high_resolution_clock::now();
+  //cout << "init took " << duration_cast<milliseconds>(t01-t0).count()*0.001 << " seconds" << endl;
+
+  std::vector<PSVar::PSVar> list;
+  for (auto it : missed) {
+   list.push_back(it);  // quarks out-of-acceptance
+  }
+  for (auto it : any) {
+    list.push_back(it);  // quark directions to be marginalised
+  }
+  
+  // number of calls
+  // n_max_calls = cfg.is_default ?
+  //  cfg.calls[static_cast<std::size_t>(fs)][static_cast<std::size_t>(h)][list.size()/2]
+  //  :
+  //  cfg.n_max_calls;
+  this->n_max_calls = ncalls > 0
+                    ? ncalls
+                    : cfg.calls[static_cast<std::size_t>(fs)]
+                               [static_cast<std::size_t>(h)][list.size() / 2];
+
+  // start the clock....
+  auto t1 = high_resolution_clock::now();
+
+  // do the calculation of the matrix element
+  make_assumption(missed, any, out);
+
+  // stop the clock!
+  auto t2 = high_resolution_clock::now();
+
+  out.time = static_cast<int>(duration_cast<milliseconds>(t2 - t1).count());
+  out.num_perm = perm_pruned.size() > 0 ? perm_pruned.size()
+                                        : perm_indexes_assumption.size();
+  out.tf_zero = this->tf_zero;
+  out.final_state = fs;
+  out.hypothesis = h;
+  out.assumption = list.size() / 2;
+  out.num_max_calls = this->n_max_calls;
+  out.num_calls = this->n_calls;
+  out.efficiency = float(n_calls) / (n_calls + n_skip);
+  out.error_code = this->error_code;
+  out.prefit_code = this->prefit_code;
+  out.permutation_indexes = this->perm_indexes_assumption;
+  out.permutation_probas = this->permutation_probas;
+  out.permutation_probas_constants = this->permutation_probas_constants;
+  out.permutation_probas_transfer = this->permutation_probas_transfer;
+  out.permutation_probas_me = this->permutation_probas_me;
+  out.permutation_sum = this->permutation_sum;
+
+  LOG(DEBUG) << "Integration took " << (double)out.time / (double)n_calls
+             << " ms/point";
+
+  if (debug_code >= 1) {
+    ostringstream os;
+    out.print(os);
+    cout << endl << os.str();
+  }
+  else{
+    ostringstream os;
+    out.print_short(os);
+    cout << endl << os.str();
+  }
+
+  VLOG(1) << "Integrand::run(): DONE in "
+           << static_cast<int>(duration_cast<milliseconds>(t2 - t0).count()) *
+                  0.001
+           << " sec";
+
+  // delete stuff and prepare for new hypothesis
+  next_hypo();
+
+  return out;
+}
+void MEM::Integrand::next_event() {
+  VLOG(1) << "Integrand::next_event(): START";
+  obs_jets.clear();
+  obs_leptons.clear();
+  obs_mets.clear();
+  error_code = 0;
+  num_of_vars = 0;
+  ps_dim = 0;
+  naive_jet_counting = 0;
+  extra_jets = 0;
+  prefit_step = 0;
+  n_calls = 0;
+  n_skip = 0;
+  tf_zero = 0;
+  n_perm_max = 0;
+  prefit_code = 0;
+  perm_index.clear();
+  for (auto p : perm_indexes_assumption) p.clear();
+  perm_indexes_assumption.clear();
+  perm_const_assumption.clear();
+  perm_btag_assumption.clear();
+  perm_btag_bb_assumption.clear();
+  perm_btag_jj_assumption.clear();
+  perm_btag_cc_assumption.clear();
+  perm_tmpval_assumption.clear();
+  
+  permutations.clear();
+  permutation_sum.clear();
+  permutation_probas.clear();
+  permutation_probas_constants.clear();
+  permutation_probas_transfer.clear();
+  permutation_probas_me.clear();
+  perm_pruned.clear();
+  
+  map_to_var.clear();
+  map_to_part.clear();
+  VLOG(1) << "Integrand::next_event(): END";
+}
+
+void MEM::Integrand::next_hypo() {
+  VLOG(1) << "Integrand::next_hypo(): START";
+  if (ig2 != nullptr) {
+    delete ig2;
+    ig2 = nullptr;
+  }
+  if (minimizer != nullptr) {
+    delete minimizer;
+    minimizer = nullptr;
+  }
+  perm_index.clear();
+  for (auto p : perm_indexes_assumption) p.clear();
+  perm_indexes_assumption.clear();
+  perm_const_assumption.clear();
+  perm_btag_assumption.clear();
+  perm_btag_bb_assumption.clear();
+  perm_btag_jj_assumption.clear();
+  perm_btag_cc_assumption.clear();
+  perm_tmpval_assumption.clear();
+  
+  permutations.clear();
+  permutation_sum.clear();
+  permutation_probas.clear();
+  permutation_probas_constants.clear();
+  permutation_probas_transfer.clear();
+  permutation_probas_me.clear();
+  perm_pruned.clear();
+  
+  map_to_var.clear();
+  map_to_part.clear();
+  prefit_step = 0;
+  n_calls = 0;
+  n_skip = 0;
+  n_perm_max = 0;
+  prefit_code = 0;
+}
+
+bool MEM::Integrand::test_assumption(const size_t &lost) {
+  if ((obs_jets.size() + lost) < naive_jet_counting) {
+    VLOG(1) << "\t This assumption cannot be made: too few jets";
+    return false;
+  }
+  return true;
+}
+
+string perms_to_string(std::vector<std::vector<int>> &perm_indexes_assumption,
+                       std::vector<double> &perm_const_assumption) {
+  ostringstream os;
+  int n_perm = 0;
+  os << "printing " << perm_indexes_assumption.size()
+     << " permutations of length " << perm_indexes_assumption.at(0).size()
+     << endl;
+  for (auto perm : perm_indexes_assumption) {
+    os << "perm. " << n_perm << ", k-factor=" << perm_const_assumption[n_perm];
+    ++n_perm;
+    os << " [";
+    for (auto ind : perm) {
+      os << ind << " ";
+    }
+    os << "]" << endl;
+  }
+  return os.str();
+}
+
+void MEM::Integrand::make_assumption(
+    const std::vector<MEM::PSVar::PSVar> &missed,
+    const std::vector<MEM::PSVar::PSVar> &any, MEMOutput &out) {
+  if (debug_code & DebugVerbosity::init) {
+    cout << "Integrand::make_assumption(): START" << endl;
+  }
+
+  double prob{0.};
+  double prob2{0.};
+  double err2{0.};
+  double chi2{0.};
+  print_point(obs_leptons, obs_jets, obs_mets, this->hypo);
+
+  // clock for timing
+  //auto t02 = high_resolution_clock::now();
+
+  std::vector<PSVar::PSVar> lost;
+  for (auto it : missed) lost.push_back(it);
+  for (auto it : any) lost.push_back(it);
+
+  // an assumption may not be consistent with the number of observed jets
+  // E.g.: assume 1 lost quark but 2 jets missing wrt to expectation
+  // N.B. extra_jets filled here!!!
+  extra_jets = (obs_jets.size() + lost.size() - naive_jet_counting);
+  if (!test_assumption(lost.size() / 2)) return;
+
+  perm_indexes_assumption.clear();
+
+  // extra variables to integrate over
+  fill_map(lost);
+
+  // Remove unwanted permutations:
+  //    CASE (1) ==> perm contains already -1: then -1 must be aligned with the
+  //    lost quark
+  //    CASE (2) ==> perm does not contain -1: then set the correct index to -1
+  LOG(DEBUG) << "filtering permutations with cfg.perm_pruning="
+             << vec_to_string(cfg.perm_pruning);
+
+  
+  if(fs == FinalState::LH || fs == FinalState::LL){
+    for (std::size_t n_perm = 0; n_perm < n_perm_max; ++n_perm) {
+      auto perm = get_permutation(n_perm);
+      if (perm.size() == 0) continue;
+      DVLOG(3) << "considering permutation " << vec_to_string(perm);
+
+      // - *it gives the integ. var. position in PSVar
+      // - provide first cosTheta: then *it-1 gives the position of E
+      // - (*it-1) / 3 gives particle position (0=q1,1=qbar1,2=b1,...)
+      size_t count{0};
+      for (auto it = missed.begin(); it != missed.end(); ++count, ++it) {
+        size_t lost_particle = (static_cast<size_t>(*it) - 1) / 3;
+        if (count % 2 == 0) {
+          perm[map_to_part[static_cast<PSPart::PSPart>(lost_particle)]] = -1;
+        }
+      }
+      for (auto it = any.begin(); it != any.end(); ++count, ++it) {
+        size_t lost_particle = (static_cast<size_t>(*it) - 1) / 3;
+        if (count % 2 == 0) {
+          perm[map_to_part[static_cast<PSPart::PSPart>(lost_particle)]] = -2;
+        }
+      }
+
+      // count the number of lost quarks as assumed in perm
+      // if it turns out to be equal to the assumed (lost.size()/2),
+      // then push back the permutation
+      count = 0;
+      for (auto ind : perm) {
+        if (ind < 0) {
+          ++count;
+        }
+      }
+
+      if (count != (lost.size() / 2)) {
+       continue;
+      }
+      if (!accept_perm(perm, cfg.perm_pruning)) {
+        continue;
+      }
+
+      perm_indexes_assumption.push_back(perm);
+
+      // Question: what is going on here?
+      std::map<PermConstants::PermConstants, double> cperm =
+        get_permutation_constants(perm);
+      perm_const_assumption.push_back(cperm.at(PermConstants::PermConstants::VarTransf));
+    }  // loop over permutations
+  } // leptonic
+  else{ // FH branch
+    // hardcode permutations //DS
+    vector<int> indexesb, indexesq; 
+    for(auto ind: perm_index){
+      if(ind >= 0){
+        MEM::Object *obj = obs_jets[ind];
+        const auto BTAG_isSet = obj->isSet(Observable::BTAG);
+        const auto BTAG_val = obj->getObs(Observable::BTAG);
+        if (BTAG_isSet && BTAG_val < 0.5) indexesq.push_back(ind);
+        if (BTAG_isSet && BTAG_val > 0.5) indexesb.push_back(ind);	
+      }
+    }
+    vector<size_t> lost_idx;
+    size_t count{0};
+    for (auto it = missed.begin(); it != missed.end(); ++count, ++it) {
+      size_t lost_particle = (static_cast<size_t>(*it) - 1) / 3;
+      if (count % 2 == 0) {
+        lost_idx.push_back(lost_particle);
+      }
+    }
+    for (auto it = any.begin(); it != any.end(); ++count, ++it) {
+      size_t lost_particle = (static_cast<size_t>(*it) - 1) / 3;
+      if (count % 2 == 0) {
+        lost_idx.push_back(lost_particle);
+      }
+    }
+    size_t nb = indexesb.size();
+    size_t nq = indexesq.size(); 
+    size_t nlost = (missed.size() + any.size()) / 2;
+
+    if(nlost != lost_idx.size()) {
+      cerr << "lost mismatch!" << endl;
+    }
+
+    vector<vector<int>> perms = get_permutations(nb, nq, lost_idx);
+
+    for(auto comb : perms){
+      perm_indexes_assumption.push_back(comb);
+
+      // Save the (non-integrated) probability of this permutation
+      std::map<PermConstants::PermConstants, double> cperm =
+	get_permutation_constants(comb);
+      perm_const_assumption.push_back(
+	  cperm.at(PermConstants::PermConstants::VarTransf));
+    }
+  } //FH
+
+  // clock for permutation timing
+  auto t03 = high_resolution_clock::now();
+  //cout << "perm filtering took " << duration_cast<milliseconds>(t03-t02).count()*0.001 << " seconds" << endl;
+
+  LOG(DEBUG) << "done filtering permutations";
+
+  VLOG(2) << perms_to_string(perm_indexes_assumption, perm_const_assumption);
+  LOG(INFO) << "A total of " << perm_indexes_assumption.size()
+            << " permutations have been considered for this assumption with"
+            << " njets=" << obs_jets.size()
+            << " missed=" << missed.size()
+            << " any=" << any.size();
+  
+  if (cfg.max_permutations > 0 &&
+      perm_indexes_assumption.size() > (unsigned int)cfg.max_permutations) {
+    LOG(ERROR) << "Too many permutations, bailing out: " << perm_indexes_assumption.size() << ">" << cfg.max_permutations;
+    for (auto &obj : obs_jets) {
+      ostringstream os;
+      obj->print(os);
+      LOG(DEBUG) << "jet " << os.str();
+    }
+    for (auto &obj : obs_leptons) {
+      ostringstream os;
+      obj->print(os);
+      LOG(DEBUG) << "lep " << os.str();
+    }
+    for (auto &obj : obs_mets) {
+      ostringstream os;
+      obj->print(os);
+      LOG(DEBUG) << "met " << os.str();
+    }
+    throw std::runtime_error("too many permutations");
+  }
+
+  // create integration ranges
+  unsigned int npar = static_cast<unsigned int>(num_of_vars + lost.size());
+
+  double xL[npar], xU[npar];
+  get_edges(xL, lost, npar, 0);
+  get_edges(xU, lost, npar, 1);
+  double volume = get_width(xL, xU, npar);
+
+  LOG(INFO) << "Integrating over " << npar << " dimensions for hypo=" << this->hypo;
+  for (unsigned int i=0; i<npar; i++) {
+    LOG(INFO) << "dim[" << i << "] = " << xL[i] << ":" << xU[i];
+  }
+  vector<double> grad = {};
+  for (int i=0; i<GRADIENT_COMPONENTS; i++) {
+    grad.push_back(0.0);
+  }
+  vector<double> variated = {};
+  for (int i=0; i<VARIATED_COMPONENTS; i++) {
+    variated.push_back(0.0);
+  }
+  do_integration(npar, xL, xU, prob, prob2, err2, chi2, grad, variated);
+
+  // clock for integration timing
+  auto t04 = high_resolution_clock::now();
+  cout << "integration took " << duration_cast<milliseconds>(t04-t03).count()*0.001 << " seconds" << endl;
+
+  if (!cfg.int_code) {
+    prob /= (volume * perm_indexes_assumption.size());
+  }
+
+  if (TMath::IsNaN(prob)) {
+    LOG(ERROR) << "do_integration() returned a NaN";
+    prob = 0.;
+    err2 = 0.;
+    chi2 = 99.;
+    error_code = 1;
+    return;
+  }
+
+  out.p = prob;
+  out.p2 = prob2;
+  out.p_err = sqrt(err2);
+  out.chi2 = chi2;
+  for (int i=0; i<GRADIENT_COMPONENTS; i++) {
+    out.grad.push_back(grad[i]);
+  }
+  for (int i=0; i<VARIATED_COMPONENTS; i++) {
+    out.variated.push_back(variated[i]);
+  }
+  return;
+}
+
+int Eval_cuba(const int *ndim, const cubareal x[], const int *ncomp, cubareal f[], void *userdata) {
+  
+  CubaUserData* ud = (CubaUserData*)userdata;
+  
+  //initialize return array
+  for (int i=0; i < CUBA_COMPONENTS; i++) {
+    f[i] = 0.0;
+  }
+  
+  double* xL = ud->xL;
+  double* xU = ud->xU;
+  
+  //need to scale integrand to box 0...1 using jacobian
+  double jacobian = 1.0;
+  double x_scaled[ndim[0]];
+  for (int i = 0; i < ndim[0]; i++) {
+    jacobian = jacobian * (xU[i] - xL[i]);
+    x_scaled[i] = xL[i] + (xU[i] - xL[i]) * x[i];
+  }
+  
+  //Multiply with ud->mult due to Cuba numerical behaviour introducing a cut-off
+  vector<double> derivs;
+  vector<double> variations;
+  const auto p = ud->integrand->Eval(x_scaled, derivs, variations, ud->only_this_perm) * jacobian * ud->mult;
+  f[0] = p;
+
+  //cout << "x "; 
+  //for (int i = 0; i < ndim[0]; i++) {
+  //  cout << x[i] << " ";
+  //}
+  //cout << p/(ud->mult) << endl;
+ 
+  for (unsigned int i=0; i < variations.size(); i++) {
+    f[i + 1] = variations[i] * jacobian * ud->mult;
+  }
+  for (unsigned int i=0; i < derivs.size(); i++) {
+    f[VARIATED_COMPONENTS + i + 1] = derivs[i] * jacobian * ud->mult;
+  }
+
+  
+  return 0;
+}
+
+double metropolis_hastings(const int npar, const int ncomp, int max_calls, int num_calls, int num_burnin, float kernel_std, CubaUserData* userdata, integrand_t func) {
+  
+  double xt1[npar];
+  double xt2[npar];
+  //int perm1;
+  //int perm2;
+  double ret1[ncomp];
+  double ret2[ncomp];
+  
+  //initial point
+  for (int i=0; i<npar; i++) {
+    xt1[i] = userdata->random->Uniform();
+  }
+  //perm1 = userdata->random->Integer(userdata->max_permutation);
+  
+  //sequence
+  vector<double> vals;
+  
+  int n_accept = 0;
+  int n_accept_batch = 0;
+  int n_burnin = 0;
+  
+  //iterate to generate MCMC sequence
+  while (n_accept < num_calls) {
+
+    //break in case of too many calls
+    if (n_burnin > max_calls) {
+        cout << "Exceeded max calls" << endl;
+        break; 
+    }
+    //update next timestep
+    for (int j=0; j<npar; j++) {
+//      const auto r =  userdata->random->Uniform();
+//      xt2[j] = xt1[j] + (0.05 * (r - 0.5));
+      const auto r =  userdata->random->Gaus(xt1[j], kernel_std);
+      xt2[j] = r;
+      if (xt2[j] < 0.0) {
+        xt2[j] = 1.0 + xt2[j];
+      }
+      if (xt2[j] > 1.0) {
+        xt2[j] = xt2[j] - 1.0;
+      }
+      //cout << xt1[j] << " " << xt2[j] << endl;
+    }
+    
+    //create an integer hop between -3 and +3 and change permutation cyclically
+    //const auto hop = (int)(userdata->random->Integer(7)) - 3;
+    //perm2 = perm1 + hop;
+    //if (perm2 < 0) {
+    //  perm2 = userdata->max_permutation + perm2;
+    //} else if (perm2 >= userdata->max_permutation) {
+    //  perm2 = perm2 - userdata->max_permutation;
+    //}
+    //perm2 = perm1;
+    //if (userdata->random->Uniform() > 0.3) {
+    //  perm2 = userdata->random->Integer(userdata->max_permutation);
+    //}
+
+    //compute function values at new proposed point
+    //userdata->only_this_perm = perm2;
+    func(&npar, xt2, &ncomp, ret2, userdata);
+   
+    //cout << ret2[0] << " " << ret1[0] << " " << ret2[0]/ret1[0] << endl; 
+    //acceptance proba
+    double acceptance = min(1.0, ret2[0]/ret1[0]);
+    double v = 0;
+    
+    //sample from acceptance
+    const auto r =  userdata->random->Uniform();
+    n_burnin++;
+    
+    if (acceptance > r) {
+      
+      //set old point to new point
+      for (int j=0; j<npar; j++) {
+        xt1[j] = xt2[j];
+      }
+      for (int j=0; j<ncomp; j++) {
+        ret1[j] = ret2[j];
+      }
+      //perm1 = perm2;
+      v = ret2[0];
+    } else {
+      //keep old value
+      v = ret1[0];
+    }
+    
+    if (n_burnin > num_burnin) {
+      if (acceptance > r) {
+        n_accept++;
+        n_accept_batch++;
+      }
+      
+      vals.push_back(v);
+      
+      if (n_burnin % 1000 == 0) {
+        for (int j=0; j < npar; j++) {
+          cout << xt1[j] << " ";
+        }
+        cout << n_burnin << " " << n_accept << " " << n_accept_batch/1000.0 << " ";
+        cout << v << endl;
+        n_accept_batch = 0;
+      }
+    }
+  }
+  
+  double tot = 0.0;
+  for (unsigned int i=0; i<vals.size(); i++) {
+    tot += vals[i];
+  }
+  cout << "MH calls=" << n_burnin << " acc=" << (float)n_accept / (float)n_burnin << " mean=" << tot/n_burnin << endl;
+  return tot/n_burnin;
+}
+
+double mh_iterate(const int npar, const int ncomp, int max_calls, int num_calls, int num_burnin, float kernel_std, CubaUserData* userdata, integrand_t func) {
+  int max_iter = 20; 
+  int n_iter = 0; 
+  vector<double> ret;
+
+  while(n_iter < max_iter) {
+    double v = metropolis_hastings(npar, ncomp, max_calls, num_calls, num_burnin, kernel_std, userdata, func);
+    ret.push_back(v);
+    n_iter += 1;
+  }
+  double tot = 0.0;
+  for (int i=0; i<max_iter; i++) {
+    tot += ret[i];
+  }
+  return tot/max_iter;
+}
+
+void MEM::Integrand::do_integration(unsigned int npar, double *xL, double *xU,
+                                    double &prob, double &prob2, double &err2, double &chi2,
+                                    vector<double>& grad,
+                                    vector<double>& variated) {
+
+  
+  if (cfg.save_permutations) {
+    for (std::size_t n_perm = 0; n_perm < perm_indexes_assumption.size();
+         ++n_perm) {
+      this->permutations.push_back(n_perm);
+      this->permutation_probas.push_back(vector<double>());
+      this->permutation_probas_constants.push_back(vector<double>());
+      this->permutation_probas_transfer.push_back(vector<double>());
+      this->permutation_probas_me.push_back(vector<double>());
+    }
+  }
+
+  // do the integral permutation by permutation
+  if (cfg.perm_int) {
+    //VEGAS integration via GSL not implemented any more, need to port to Cuba
+    throw std::runtime_error("integration permutation-by-permutation is not implemented");
+  }    // perm_int
+
+  // do the integral over the sum of permutations
+  else {
+    double p = 0, p_err = 0, c2 = 0;
+    
+    vector<double> _grad;
+    vector<double> _variated;
+    
+    if (cfg.integrator_type == IntegratorType::IntegratorType::Vegas_GSL) {
+      throw std::runtime_error("Vegas_GSL is not enabled any more, use 'Vegas'"); 
+    } else if (cfg.integrator_type == IntegratorType::IntegratorType::Vegas) {
+      int n_eval = 0;
+      int fail = 0;
+      //pack integration results so that
+      // [p, var_0, ... var_N, grad_1, ..., grad_M]
+      // N = VARIATED_COMPONENTS
+      // M = GRADIENT_COMPONENTS
+      double c_res[CUBA_COMPONENTS];
+      double c_err[CUBA_COMPONENTS];
+      double c_prob[CUBA_COMPONENTS];
+      
+      CubaUserData ud;
+      ud.integrand = this;
+      ud.xL = xL;
+      ud.xU = xU;
+      //Need a multiplication factor for Cuba numerical accuracy
+      ud.mult = 1e100;
+      ud.only_this_perm = -1;
+      ud.random = &random;
+      ud.max_permutation = (int)perm_indexes_assumption.size();
+//      void Vegas(const int ndim, const int ncomp,
+//                 integrand_t integrand, void *userdata, const int nvec,
+//                 const cubareal epsrel, const cubareal epsabs,
+//                 const int flags, const int seed,
+//                 const int mineval, const int maxeval,
+//                 const int nstart, const int nincrease, const int nbatch,
+//                 const int gridno, const char *statefile, void *spin,
+//                 int *neval, int *fail,
+//                 cubareal integral[], cubareal error[], cubareal prob[]);
+
+      
+      Vegas(
+        (const int)npar, //number of parameters
+        CUBA_COMPONENTS, //number of components
+        Eval_cuba, //integrand
+        (void*)&ud, //pointer to user data
+        1, //nvec - how many simultaneous evaluations to do with vectorization
+        cfg.rel,
+        cfg.abs,
+        0b1000, //flag (random, grid, verb1, verb2)
+        0, //seed
+        n_max_calls, //minimal number of calls
+        5*n_max_calls, //maximal number of calls
+        n_max_calls, //first iter
+        0, //increase each iteration size by
+        n_max_calls, //batch size
+        0, "", (void*)nullptr, //gridno, statefile, spin
+        &n_eval, &fail,
+        c_res, c_err, c_prob
+      );
+     
+//      This was a work-in-progress attempt at markov chain integration
+//      auto ret = mh_iterate((const int)npar, (const int)CUBA_COMPONENTS, 10000, this->n_max_calls, 100, 0.15, &ud, Eval_cuba);
+//      cout << c_res[0]/ud.mult << " " << ret/ud.mult << endl;
+      
+      if (fail && c_err[0] / c_res[0] > 1.0) {
+        LOG(ERROR) << "Integration failed: res=" << c_res[0]
+          << " err=" <<  c_err[0] << " after nevals=" << n_eval << endl;
+        for (int i=0; i < CUBA_COMPONENTS; i++) {
+          c_res[i] = -1;
+          c_err[i] = -1;
+        }
+      } else {
+        for (int i=0; i < CUBA_COMPONENTS; i++) {
+          c_res[i] = c_res[i]/ud.mult;
+          c_err[i] = c_err[i]/ud.mult;
+        }
+        p = c_res[0];
+        p_err = TMath::Power(c_err[0], 2);
+        
+        //p = ret / ud.mult;
+        
+        c2 = c_prob[0];
+        for (int i=1; i < 1 + VARIATED_COMPONENTS; i++) {
+          _variated.push_back(c_res[i]);
+        }
+        for (int i=1 + VARIATED_COMPONENTS; i<1 + VARIATED_COMPONENTS + GRADIENT_COMPONENTS; i++) {
+          _grad.push_back(c_res[i]);
+        }
+        if (TMath::IsNaN(p)) {
+          LOG(ERROR) << "Integral() returned a NaN...";
+          p = 0.;
+          p_err = 0.;
+          c2 = 99.;
+          error_code = 1;
+        }
+        prob += p;
+        //prob2 += ret;
+        err2 += p_err;
+        chi2 += c2;
+        for (int i=0; i < GRADIENT_COMPONENTS; i++) {
+          grad[i] += _grad[i];
+        }
+        for (int i=0; i < VARIATED_COMPONENTS; i++) {
+          variated[i] += _variated[i];
+        }
+      } //fail
+    } //Vegas integrator
+
+  }  // perm_int flag
+
+  return;
+}
+
+vector<size_t> get_indexes(
+    const std::unordered_map<MEM::PSPart::PSPart, std::size_t, MEM::PSPartHash,
+                             MEM::PSPartEqual> &map_to_part,
+    std::initializer_list<MEM::PSPart::PSPart> particles) {
+  vector<std::size_t> indexes;
+  for (auto p : particles) {
+    indexes.push_back(map_to_part.at(p));
+  }
+  return indexes;
+}
+
+bool MEM::Integrand::accept_perm_btagged(const vector<int> &perm) const {
+  // get all the perm -> obs indexes of the b-tags
+  vector<size_t> indexes = get_indexes(
+      map_to_part, {PSPart::b1, PSPart::b2, PSPart::b, PSPart::bbar});
+
+  for (auto ind : indexes) {
+    int pind = perm[ind];
+
+    // jet was present
+    if (pind >= 0) {
+      MEM::Object *obj = obs_jets[pind];
+      const auto BTAG_isSet = obj->isSet(Observable::BTAG);
+      const auto BTAG_val = obj->getObs(Observable::BTAG);
+      const auto PDGID_isSet = obj->isSet(Observable::PDGID);
+      const auto PDGID_val = obj->getObs(Observable::PDGID);
+      if (BTAG_isSet && BTAG_val < 0.5 &&
+          (!PDGID_isSet || (PDGID_isSet && PDGID_val == 0))) {
+        if (debug_code & DebugVerbosity::init_more) {
+          VLOG(2) << "Discard permutation: obs_jets[ perm[" << ind
+               << "] ] has BTAG=" << BTAG_val << endl;
+        }
+        return false;
+      }
+    }  // pind >= 0
+  }    // loop over indexes
+  return true;
+}
+
+bool MEM::Integrand::accept_perm_quntagged(const vector<int> &perm) const {
+  vector<size_t> indexes;
+  if (fs == FinalState::LH) {
+    indexes = get_indexes(map_to_part, {PSPart::q1, PSPart::qbar1});
+  } else if (fs == FinalState::LL) {
+    indexes = vector<size_t>{};
+  } else if (fs == FinalState::HH) {
+    indexes = get_indexes(
+        map_to_part, {PSPart::q1, PSPart::qbar1, PSPart::q2, PSPart::qbar2});
+  }
+  for (auto ind : indexes) {
+    int pind = perm[ind];
+    if (perm[ind] >= 0) {
+      MEM::Object *obj = obs_jets[pind];
+      const auto BTAG_isSet = obj->isSet(Observable::BTAG);
+      const auto BTAG_val = obj->getObs(Observable::BTAG);
+      const auto PDGID_isSet = obj->isSet(Observable::PDGID);
+      const auto PDGID_val = obj->getObs(Observable::PDGID);
+      if (BTAG_isSet && BTAG_val > 0.5 &&
+          (!PDGID_isSet || (PDGID_isSet && PDGID_val == 0))) {
+        VLOG(2) << "Discard permutation: obs_jets[ perm[" << ind
+                << "] ] has BTAG=" << BTAG_val;
+        return false;
+      }
+    }  // pind >= 0
+  }    // loop over indexes
+  return true;
+}
+
+bool MEM::Integrand::accept_perm_qqbarsymmetry(const vector<int> &perm) const {
+  vector<size_t> indexes1, indexes2;
+
+  if (fs == FinalState::LH) {
+    // the  symmetric part
+    indexes1 = get_indexes(map_to_part, {PSPart::q1, PSPart::qbar1});
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part,
+                           {PSPart::b1, PSPart::b2, PSPart::b, PSPart::bbar});
+  } else if (fs == FinalState::LL) {
+    // the  symmetric part
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part,
+                           {PSPart::b1, PSPart::b2, PSPart::b, PSPart::bbar});
+  } else if (fs == FinalState::HH) {
+    // the  symmetric part
+    indexes1 = get_indexes(
+        map_to_part, {PSPart::q1, PSPart::qbar1, PSPart::q2, PSPart::qbar2});
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part,
+                           {PSPart::b1, PSPart::b2, PSPart::b, PSPart::bbar});
+  }
+ 
+  for (auto visited : perm_indexes_assumption) {
+    bool asymmetric_part{true};
+    bool symmetric_part{true};
+
+    // loop over quark positions that should be matched to same jet
+    for (auto same : indexes2)
+      if (visited[same] != perm[same]) asymmetric_part = false;
+
+    // loop over quark position pairs searching for a swap
+    for (size_t i = 0; i < (indexes1.size() / 2); ++i) {
+      bool same = (visited[indexes1[2 * i]] == perm[indexes1[2 * i]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i + 1]]);
+      bool swap = (visited[indexes1[2 * i]] == perm[indexes1[2 * i + 1]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i]]);
+      if (!(same || swap)) symmetric_part = false;
+    }
+
+    if (asymmetric_part && symmetric_part) {
+      VLOG(2) << "\t\tDiscard permutation: a (Q,QBAR) swap has been found";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MEM::Integrand::accept_perm_bbbarsymmetry(const vector<int> &perm) const {
+  vector<size_t> indexes1, indexes2;
+
+  // the  symmetric part
+  indexes1 = get_indexes(map_to_part, {PSPart::b, PSPart::bbar});
+
+  if (fs == FinalState::LH || fs == FinalState::HH) {
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part,
+                           {PSPart::b1, PSPart::b2, PSPart::q1, PSPart::qbar1});
+  } else if (fs == FinalState::LL) {
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part, {PSPart::b1, PSPart::b2});
+  }
+
+  for (auto visited : perm_indexes_assumption) {
+    bool asymmetric_part{true};
+    bool symmetric_part{true};
+
+    // loop over quark positions that should be matched to same jet
+    for (auto same : indexes2)
+      if (visited[same] != perm[same]) asymmetric_part = false;
+
+    // loop over quark position pairs searching for a swap
+    for (size_t i = 0; i < (indexes1.size() / 2); ++i) {
+      bool same = (visited[indexes1[2 * i]] == perm[indexes1[2 * i]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i + 1]]);
+      bool swap = (visited[indexes1[2 * i]] == perm[indexes1[2 * i + 1]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i]]);
+      if (!(same || swap)) symmetric_part = false;
+    }
+
+    if (asymmetric_part && symmetric_part) {
+      VLOG(2) << "Discard permutation: a (B,BBAR) swap has been found";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MEM::Integrand::accept_perm_qqbarbbbarsymmetry(
+    const vector<int> &perm) const {
+  vector<size_t> indexes1, indexes2;
+  if (fs == FinalState::LH) {
+    // the  symmetric part
+    indexes1 = get_indexes(
+        map_to_part, {PSPart::q1, PSPart::qbar1, PSPart::b, PSPart::bbar});
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part, {PSPart::b1, PSPart::b2});
+  } else if (fs == FinalState::LL) {
+    // the  symmetric part
+    indexes1 = get_indexes(map_to_part, {PSPart::b, PSPart::bbar});
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part, {PSPart::b1, PSPart::b2});
+  } else if (fs == FinalState::HH) {
+    // the  symmetric part
+    indexes1 =
+        get_indexes(map_to_part, {PSPart::q1, PSPart::qbar1, PSPart::q2,
+                                  PSPart::qbar2, PSPart::b, PSPart::bbar});
+    // the asymmetric part
+    indexes2 = get_indexes(map_to_part, {PSPart::b1, PSPart::b2});
+  }
+
+  for (auto visited : perm_indexes_assumption) {
+    bool asymmetric_part{true};
+    bool symmetric_part{true};
+
+    // loop over quark positions that should be matched to same jet
+    for (auto same : indexes2)
+      if (visited[same] != perm[same]) asymmetric_part = false;
+
+    // loop over quark position pairs searching for a swap
+    for (size_t i = 0; i < (indexes1.size() / 2); ++i) {
+      bool same = (visited[indexes1[2 * i]] == perm[indexes1[2 * i]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i + 1]]);
+      bool swap = (visited[indexes1[2 * i]] == perm[indexes1[2 * i + 1]]) &&
+                  (visited[indexes1[2 * i + 1]] == perm[indexes1[2 * i]]);
+      if (!(same || swap)) symmetric_part = false;
+    }
+
+    if (asymmetric_part && symmetric_part) {
+      VLOG(2) << "Discard permutation: a (Q,QBAR) swap has been found";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MEM::Integrand::accept_perm(
+    const vector<int> &perm,
+    const std::vector<MEM::Permutations::Permutations> &strategies) const {
+  // helper containers
+  vector<size_t> indexes1;
+  vector<size_t> indexes2;
+
+  // loop over strategies to filter out permutations
+  for (auto strat : strategies) {
+    switch (strat) {
+      // Require all b quarks to be matched to tagged jets
+      case Permutations::BTagged:
+        if (!accept_perm_btagged(perm)) {
+          VLOG(3) << "Permutation failed BTagged";
+          return false;
+        }
+        break;
+
+      // Require all non-b quarks to be matched to untagged jets
+      case Permutations::QUntagged:
+        if (!accept_perm_quntagged(perm)) {
+          VLOG(3) << "Permutation failed QUntagged";
+          return false;
+        }
+        break;
+
+      // require that no other permutations has been already considered
+      // differing from perm by swapping the W quarks
+      case Permutations::QQbarSymmetry:
+        if (!accept_perm_qqbarsymmetry(perm)) {
+          VLOG(3) << "Permutation failed QQbarSymmetry";
+          return false;
+        }
+        break;
+
+      case Permutations::BBbarSymmetry:
+        if (!accept_perm_bbbarsymmetry(perm)) {
+          VLOG(3) << "Permutation failed BBbarSymmetry";
+          return false;
+        }
+        break;
+
+      case Permutations::QQbarBBbarSymmetry:
+        if (!accept_perm_qqbarbbbarsymmetry(perm)) {
+          VLOG(3) << "Permutation failed QQbarBBbarSymmetry";
+          return false;
+        }
+        break;
+      
+      // assume one can match quarks to HEPTopTag subjets
+      case Permutations::HEPTopTagged:
+       {
+        //int lepcharge = 0;
+        //if (fs == FinalState::LH) {
+        //  int lept = map_to_part.find(PSPart::q2)->second;
+        //  MEM::Object *lep = obs_leptons[lept];
+        //  if (perm[lept] >= 0 && lep->isSet(Observable::CHARGE)) {
+        //    lepcharge = int(lep->getObs(Observable::CHARGE));
+        //  }
+        //}
+        // deal with the first top
+        if (!(fs == FinalState::HH || fs == FinalState::LH)) continue;
+        indexes1 = vector<size_t>{map_to_part.find(PSPart::q1)->second,
+                                  map_to_part.find(PSPart::qbar1)->second,
+                                  map_to_part.find(PSPart::b1)->second};
+        
+        for (size_t idx_hep = 0; idx_hep < 3; ++idx_hep) {
+          int idx = indexes1[idx_hep];
+          if (perm[idx] >= 0 &&
+          obs_jets[perm[idx]]->isSet(Observable::PDGID) &&
+              obs_jets[perm[idx]]->getObs(Observable::PDGID) !=
+                  ((idx_hep < 2 ? +1 : +5))) {
+            if (debug_code & DebugVerbosity::init_more) {
+              cout << "\t\tDiscard permutation because jet[" <<
+              perm[idx]
+                   << "] should be associated with a pdgid="
+                   << (idx_hep < 2 ? +1 : +5)
+                   << " quark from top, but its pdgid from HEPTopTagging is "
+                   << obs_jets[perm[idx]]->getObs(Observable::PDGID) <<
+                   endl;
+            }
+            return false;
+          }
+        }
+      
+        // deal with the second top (if any)
+        if (!(fs == FinalState::HH)) continue;
+        indexes2 = vector<size_t>{map_to_part.find(PSPart::q2)->second,
+                                  map_to_part.find(PSPart::qbar2)->second,
+                                  map_to_part.find(PSPart::b2)->second};
+        for (size_t idx_hep = 0; idx_hep < 3; ++idx_hep) {
+          int idx = indexes2[idx_hep];
+          if (perm[idx] >= 0 &&
+          obs_jets[perm[idx]]->isSet(Observable::PDGID) &&
+              obs_jets[perm[idx]]->getObs(Observable::PDGID) !=
+                  (idx_hep < 2 ? -1 : -5)) {
+            if (debug_code & DebugVerbosity::init_more) {
+              cout << "\t\tDiscard permutation because jet[" <<
+              perm[idx]
+                   << "] should be associated with a pdgid="
+                   << (idx_hep < 2 ? -1 : -5)
+                   << " quark from anti-top, but its pdgid from HEPTopTagging is "
+                   << obs_jets[perm[idx]]->getObs(Observable::PDGID) <<
+                   endl;
+            }
+            return false;
+          }
+        }
+        break;
+      }
+      // assume one can match quarks to HEPTopTag subjets
+      case Permutations::HEPTopTaggedNoPrefix:
+        {
+        //int lepcharge = 0;
+        //if (fs == FinalState::LH) {
+        //  int lept = map_to_part.find(PSPart::q2)->second;
+        //  MEM::Object *lep = obs_leptons[lept];
+        //  if (perm[lept] >= 0 && lep->isSet(Observable::CHARGE)) {
+        //    lepcharge = int(lep->getObs(Observable::CHARGE));
+        //  }
+        //}
+        // deal with the first top
+        if (!(fs == FinalState::HH || fs == FinalState::LH)) continue;
+        indexes1 = vector<size_t>{map_to_part.find(PSPart::q1)->second,
+                                  map_to_part.find(PSPart::qbar1)->second,
+                                  map_to_part.find(PSPart::b1)->second};
+      
+        if (perm[indexes1[0]] < 0 || perm[indexes1[1]] < 0 ||
+            perm[indexes1[2]] < 0)
+          continue;
+        if (obs_jets[perm[indexes1[0]]]->getObs(Observable::PDGID) *
+                obs_jets[perm[indexes1[1]]]->getObs(Observable::PDGID) *
+                obs_jets[perm[indexes1[2]]]->getObs(Observable::PDGID)
+                !=
+            5)
+          return false;
+      
+        // deal with the second top (if any)
+        if (!(fs == FinalState::HH)) continue;
+        indexes2 = vector<size_t>{map_to_part.find(PSPart::q2)->second,
+                                  map_to_part.find(PSPart::qbar2)->second,
+                                  map_to_part.find(PSPart::b2)->second};
+      
+        if (perm[indexes2[0]] < 0 || perm[indexes2[1]] < 0 ||
+            perm[indexes2[2]] < 0)
+          continue;
+        if (obs_jets[perm[indexes2[0]]]->getObs(Observable::PDGID) *
+                obs_jets[perm[indexes2[1]]]->getObs(Observable::PDGID) *
+                obs_jets[perm[indexes2[2]]]->getObs(Observable::PDGID)
+                !=
+            5)
+          return false;
+        break;
+      }
+      // assume one can match quarks to HiggsTagger subjets
+      case Permutations::HiggsTagged:
+        indexes1 = vector<size_t>{map_to_part.find(PSPart::b)->second,
+                                  map_to_part.find(PSPart::bbar)->second};
+        for (size_t idx_hep = 0; idx_hep < 2; ++idx_hep) {
+          int idx = indexes1[idx_hep];
+          if (perm[idx] >= 0 &&
+          obs_jets[perm[idx]]->isSet(Observable::PDGID) &&
+              obs_jets[perm[idx]]->getObs(Observable::PDGID) != 22) {
+            if (debug_code & DebugVerbosity::init_more) {
+              cout << "\t\tDiscard permutation because jet[" <<
+              perm[idx]
+                   << "] should be associated with a pdgid=22"
+                   << " quark from Higgs, but its pdgid from HiggsTagging is "
+                   << obs_jets[perm[idx]]->getObs(Observable::PDGID) <<
+                   endl;
+            }
+            return false;
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+  VLOG(2) << "Permutation " << vec_to_string(perm) << " accepted";
+  ;
+  return true;
+}
+
+std::map<MEM::PermConstants::PermConstants, double>
+MEM::Integrand::get_permutation_constants(const vector<int> &perm) const {
+  VLOG(2) << "Integrand::get_permutation_constants(): START";
+
+  std::map<PermConstants::PermConstants, double> out;
+
+  double p{1.};
+  double DeltaE{1.};
+
+  size_t pos;
+  MEM::Object *obj = nullptr;
+
+  switch (fs) {
+    case FinalState::LH:
+      pos = map_to_part.find(PSPart::q1)->second;
+      if (perm[pos] >= 0) {
+        obj = obs_jets[perm[pos]];
+        DeltaE = (obj->getObs(Observable::E_HIGH_Q) -
+                  obj->getObs(Observable::E_LOW_Q));
+      } else {
+        DeltaE = cfg.emax - MQ;
+      }
+      VLOG(2) << "dE_q = " << DeltaE << " GeV";
+      p *= DeltaE;
+
+      // PSVar::E_b
+      pos = map_to_part.find(PSPart::b)->second;
+      if (perm[pos] >= 0) {
+        obj = obs_jets[perm[pos]];
+        DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+                  obj->getObs(Observable::E_LOW_B));
+      } else {
+        DeltaE = cfg.emax - MB;
+      }
+      p *= DeltaE;
+
+      // PSVar::E_bbar
+      if (hypo == Hypothesis::TTBB) {
+        pos = map_to_part.find(PSPart::bbar)->second;
+        if (perm[pos] >= 0) {
+          obj = obs_jets[perm[pos]];
+          DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+                    obj->getObs(Observable::E_LOW_B));
+        } else {
+          DeltaE = cfg.emax - MB;
+        }
+        p *= DeltaE;
+      }
+      break;
+    case FinalState::LL:
+      pos = map_to_part.find(PSPart::b)->second;
+      if (perm[pos] >= 0) {
+        obj = obs_jets[perm[pos]];
+        DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+                  obj->getObs(Observable::E_LOW_B));
+      } else {
+        DeltaE = cfg.emax - MB;
+      }
+      p *= DeltaE;
+
+      // PSVar::E_bbar
+      if (hypo == Hypothesis::TTBB) {
+        pos = map_to_part.find(PSPart::bbar)->second;
+        if (perm[pos] >= 0) {
+          obj = obs_jets[perm[pos]];
+          DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+                    obj->getObs(Observable::E_LOW_B));
+        } else {
+          DeltaE = cfg.emax - MB;
+        }
+        VLOG(2) << "dE_bbar = " << DeltaE << " GeV";
+        p *= DeltaE;
+      }
+      break;
+    case FinalState::HH:
+      // PSVar::E_q1
+      pos = map_to_part.find(PSPart::q1)->second;
+      if( perm[ pos ]>=0 ){
+	obj = obs_jets[ perm[pos] ];
+	DeltaE = (obj->getObs(Observable::E_HIGH_Q) -
+		  obj->getObs(Observable::E_LOW_Q));      
+      } else {
+	DeltaE = cfg.emax - MQ;
+      }
+      DVLOG(2) << "dE_q1 = " << DeltaE << " GeV";
+      p *= DeltaE;
+
+      // PSVar::E_q2
+      pos = map_to_part.find(PSPart::q2)->second;
+      if( perm[ pos ]>=0 ){
+	obj = obs_jets[ perm[pos] ];
+	DeltaE = (obj->getObs(Observable::E_HIGH_Q) -
+		  obj->getObs(Observable::E_LOW_Q));      
+      } else {
+	DeltaE = cfg.emax - MQ;
+      }
+      DVLOG(2) << "dE_q2 = " << DeltaE << " GeV" << endl;
+      p *= DeltaE;
+
+      // PSVar::E_b
+      pos = map_to_part.find(PSPart::b)->second;
+      if( perm[ pos ]>=0 ){
+	obj = obs_jets[ perm[pos] ];
+	DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+		  obj->getObs(Observable::E_LOW_B));     
+      } else {
+	DeltaE = cfg.emax - MB;
+      }
+      DVLOG(2) << "dE_b = " << DeltaE << " GeV" << endl;
+      p *= DeltaE;
+
+      // PSVar::E_bbar
+      if( hypo==Hypothesis::TTBB ){
+	pos = map_to_part.find(PSPart::bbar)->second;
+	if( perm[ pos ]>=0 ){
+	  obj = obs_jets[ perm[pos] ];
+	  DeltaE = (obj->getObs(Observable::E_HIGH_B) -
+		    obj->getObs(Observable::E_LOW_B));
+	} else {
+	  DeltaE = cfg.emax - MB;
+	}
+	DVLOG(2) << "dE_bbar = " << DeltaE << " GeV" << endl;
+	p *= DeltaE;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  out[PermConstants::PermConstants::VarTransf] = p;
+
+  return out;
+}
+
+double MEM::Integrand::Eval(const double *x, vector<double>& derivs, vector<double>& variations, int only_this_perm) {
+  VLOG(2) << "Integrand::Eval(): START Function call num. " << n_calls << endl;
+  
+  double p{0.};
+
+  
+  
+  //loop over permutations at each phase space point
+  for (std::size_t n_perm = 0; n_perm < perm_indexes_assumption.size();
+       ++n_perm) {
+    // Filter this permutation if doing permutation sum _outside_ the integral
+    // or if dealing with prefit
+    if (cfg.perm_int && n_perm != this->this_perm) {
+      continue;
+    }
+    
+    if (only_this_perm >=0 && n_perm != (std::size_t)only_this_perm) {
+      continue;
+    }
+
+    // filter this permutation if doing permutation filtering
+    if (cfg.do_perm_filtering || (cfg.do_prefit && prefit_step == 2)) {
+      if (!is_in(perm_pruned, n_perm)) {
+        continue;
+      }
+    }
+
+    //derivatives for this permutation
+    vector<double> _derivs;
+    vector<double> _variations;
+    const double p0 = probability(x, n_perm, _derivs, _variations);
+    this->n_calls_perm++;
+    
+    // QUESTION: what is this perm_const_assumption?
+    double p1 = cfg.int_code > 0 ? perm_const_assumption[n_perm] : 1.0;
+    VLOG(2) << "Permutation #" << n_perm << " => p = (" << p0 << "*" << p1
+             << ") = " << (p0 * p1) << endl
+             << "P --> " << p << " + " << (p0 * p1) << endl;
+
+    if (cfg.save_permutations) {
+      this->permutation_probas.at(n_perm).push_back(p0 * p1);
+    }
+    
+    p += (p0 * p1);
+
+    //first permutation, initialize total derivative vector
+    if (derivs.size() == 0) {
+      for (auto v : _derivs) {
+        derivs.push_back(v * p1);
+      }
+    } else if (_derivs.size() > 0 && _derivs.size() == derivs.size()) {
+      //add derivative vectors to total
+      for (unsigned int i=0; i<derivs.size(); i++) {
+        derivs[i] += _derivs[i] * p1;
+      }
+    }
+    if (variations.size() == 0) {
+      for (auto v : _variations) {
+        variations.push_back(v * p1);
+      }
+    } else if (_variations.size() > 0 && _variations.size() == variations.size()) {
+      //add variation vectors to total
+      for (unsigned int i=0; i<variations.size(); i++) {
+        variations[i] += _variations[i] * p1;
+      }
+    }
+  }  // loop over permutations
+   this->n_calls++;
+
+  if (TMath::IsNaN(p)) {
+    LOG(ERROR) << "Eval() returned a NaN";
+    return 0.;
+  }
+
+  return p;
+}
+
+int MEM::Integrand::create_PS(MEM::PS &ps, const double *x,
+                              const vector<int> &perm) const {
+  VLOG(2) << "Integrand::create_PS(): START";
+
+  switch (fs) {
+    case FinalState::LH:
+      return create_PS_LH(ps, x, perm);
+      break;
+    case FinalState::LL:
+      return create_PS_LL(ps, x, perm);
+      break;
+    case FinalState::HH:
+      return create_PS_HH(ps, x, perm);
+      break;
+    case FinalState::TTH:
+      return create_PS_TTH(ps, x, perm);
+      break;
+    default:
+      break;
+  }
+
+  return 0;
+}
+
+int MEM::Integrand::create_PS_LH(MEM::PS &ps, const double *x,
+                                 const vector<int> &perm) const {
+  VLOG(2) << "Integrand::create_PS_LH(): START";
+
+  // corrupted phase space
+  int accept{0};
+
+  // store temporary values to build four-vectors
+  double E{0.};
+  double E_LOW{0.};
+  double E_HIGH{0.};
+  double E_REC{numeric_limits<double>::max()};
+  TVector3 dir(1., 0., 0.);
+  TFType::TFType tftype = TFType::Unknown;
+
+  // map a quark to an index inside the obs_ collections
+  size_t nj_q1 = map_to_part.find(PSPart::q1)->second;
+  size_t nj_qbar1 = map_to_part.find(PSPart::qbar1)->second;
+  size_t nj_b1 = map_to_part.find(PSPart::b1)->second;
+  size_t nl_q2 = map_to_part.find(PSPart::q2)->second;
+  size_t nj_b2 = map_to_part.find(PSPart::b2)->second;
+  size_t nj_b = map_to_part.find(PSPart::b)->second;
+  size_t nj_bbar = map_to_part.find(PSPart::bbar)->second;
+  size_t nj_rad = map_to_part.find(PSPart::gluon_rad)->second;
+
+  DVLOG(2) << "nj_q1=" << nj_q1;
+  DVLOG(2) << "nj_qbar1=" << nj_qbar1;
+  DVLOG(2) << "nj_b1=" << nj_b1;
+  DVLOG(2) << "nj_b2=" << nj_b2;
+  DVLOG(2) << "nj_b=" << nj_b;
+  DVLOG(2) << "nj_bbar=" << nj_bbar;
+  DVLOG(2) << "nl_q2=" << nl_q2;
+  DVLOG(2) << "nj_rad=" << nj_rad;
+  
+  for (auto p : perm) {
+      DVLOG(2) << "perm " << p;
+  }
+  /////  PSPart::q1
+  if (perm[nj_q1] >= 0) {
+    const MEM::Object *obj = obs_jets[perm[nj_q1]];
+    assert(GOOD_VEC(obj->p4()));
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_Q);
+    E_HIGH = obj->getObs(Observable::E_HIGH_Q);
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_q1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_q1)->second]);
+    E_LOW = MQ;
+    E_HIGH = TMath::Min(
+        cfg.emax, 2 * MEM::TF_ACC_param[1] /
+                      TMath::Sin(dir.Theta()));  // Restrict to 2*E threshol
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_q1] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_q1)->second]);
+  extend_PS(ps, PSPart::q1, E, MQ, dir, perm[nj_q1], PSVar::cos_q1,
+            PSVar::phi_q1, PSVar::E_q1, tftype, 0);
+
+  /////  PSPart::qbar1
+  if (perm[nj_qbar1] >= 0) {
+    dir = obs_jets[perm[nj_qbar1]]->p4().Vect().Unit();
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_qbar1)->second]);
+    tftype = (perm[nj_qbar1] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q1), DMW2, MQ, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar1, E, MQ, dir, perm[nj_qbar1], PSVar::cos_qbar1,
+            PSVar::phi_qbar1, PSVar::E_qbar1, tftype, 0);
+
+  /////  PSPart::b1
+  if (perm[nj_b1] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b1]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b1)->second]);
+    tftype = (perm[nj_b1] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q1) + ps.lv(PSPart::qbar1), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b1, E, MB, dir, perm[nj_b1], PSVar::cos_b1,
+            PSVar::phi_b1, PSVar::E_b1, tftype, 0);
+
+  /////  PSPart::q2
+  MEM::Object *lep = obs_leptons[nl_q2];
+  dir = lep->p4().Vect().Unit();
+  E = lep->p4().E();
+  extend_PS(ps, PSPart::q2, E, ML, dir, nl_q2, PSVar::cos_q2, PSVar::phi_q2,
+            PSVar::E_q2, TFType::muReco, int(lep->getObs(Observable::CHARGE)));
+
+  /////  PSPart::qbar2 (neutrino)
+  dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar2)->second]));
+  double phi_n =
+      x[map_to_var.find(PSVar::phi_qbar2)->second] + obs_mets[0]->p4().Phi();
+  if (phi_n > +PI)
+    phi_n -= 2 * PI;
+  else if (phi_n < -PI)
+    phi_n += 2 * PI;
+  dir.SetPhi(phi_n);
+  E = solve(ps.lv(PSPart::q2), DMW2, ML, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar2, E, 0., dir, -1, PSVar::cos_qbar2,
+            PSVar::phi_qbar2, PSVar::E_qbar2, TFType::MET, 0);
+
+  /////  PSPart::b2
+  if (perm[nj_b2] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b2]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b2)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b2)->second]);
+    tftype = (perm[nj_b2] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q2) + ps.lv(PSPart::qbar2), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b2, E, MB, dir, perm[nj_b2], PSVar::cos_b2,
+            PSVar::phi_b2, PSVar::E_b2, tftype, 0);
+
+  /////  PSPart::b
+  if (perm[nj_b] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b]];
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_b] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_b)->second]);
+  extend_PS(ps, PSPart::b, E, MB, dir, perm[nj_b], PSVar::cos_b, PSVar::phi_b,
+            PSVar::E_b, tftype, 0);
+
+  /////  PSPart::bbar
+  if (perm[nj_bbar] >= 0) {
+    const MEM::Object *obj = obs_jets[perm[nj_bbar]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_bbar)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_bbar)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_bbar] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = hypo == Hypothesis::TTBB
+          ? E_LOW +
+                (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_bbar)->second])
+          : solve(ps.lv(PSPart::b), DMH2, MB, dir, E_REC, accept);
+  extend_PS(ps, PSPart::bbar, E, MB, dir, perm[nj_bbar], PSVar::cos_bbar,
+            PSVar::phi_bbar, PSVar::E_bbar, tftype, 0);
+
+  // Additional radiation
+  if (nj_rad < perm.size() && perm[nj_rad] >= 0 &&
+      (cfg.int_code & IntegrandType::AdditionalRadiation)) {
+    const auto iobs = perm[nj_rad];
+    const MEM::Object *obj = obs_jets[iobs];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::qReco;
+    extend_PS(ps, PSPart::gluon_rad, E_REC, 0, dir, iobs, PSVar::cos_rad,
+              PSVar::phi_rad, PSVar::E_rad, tftype, 0);
+  }
+
+  // protect against collinear radiation for TTBB
+  if (hypo == Hypothesis::TTBB) {
+    LV lv_b = ps.lv(PSPart::b);
+    LV lv_bbar = ps.lv(PSPart::bbar);
+    if (lv_b.Pt() < 0. || lv_bbar.Pt() < 0. || deltaR(lv_b, lv_bbar) < 0.3) {
+      accept = -1;
+      VLOG(2) << "Skip this PS because of collinearity: [" << lv_b.Pt()
+                << ", " << lv_bbar.Pt() << ", " << deltaR(lv_b, lv_bbar) << "]";
+    }
+  }
+
+  return accept;
+}
+
+void MEM::Integrand::extend_PS(MEM::PS &ps, const MEM::PSPart::PSPart &part,
+                               const double &E, const double &M,
+                               const TVector3 &dir, size_t pos,
+                               const PSVar::PSVar &var_cos,
+                               const PSVar::PSVar &var_phi,
+                               const PSVar::PSVar &var_E,
+                               const TFType::TFType &type, int charge) const {
+  double E_phys = TMath::Max(E, M);
+  double P = sqrt(E_phys * E_phys - M * M);
+  DVLOG(2) << "pspart=" << part << " E=" << E << " M=" << M; 
+  // if (type == TFType::Unknown) {
+  //   throw std::runtime_error("Extending PS with tf type==Unknown");
+  // }
+  ps.set(part, MEM::GenPart(TLorentzVector(dir * P, E_phys), type, charge));
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\t\tExtend phase-space point: adding variable "
+             << static_cast<size_t>(part);
+    if (map_to_var.find(var_E) != map_to_var.end()) {
+      VLOG(3) << "\t\tE   = x[" << map_to_var.find(var_E)->second
+               << "] = " << E << " GeV";
+    } else {
+      VLOG(3) << "\t\tE   = SOLVE() = " << E << " GeV";
+    }
+    if (map_to_var.find(var_cos) != map_to_var.end() &&
+        map_to_var.find(var_phi) != map_to_var.end()) {
+      VLOG(3) << "\t\tcos = x[" << map_to_var.find(var_cos)->second
+               << "] = " << TMath::Cos(dir.Theta());
+      VLOG(3) << "\t\tphi = x[" << map_to_var.find(var_phi)->second
+               << "] = " << dir.Phi();
+    } else {
+      VLOG(3) << "\t\tUsing obs[" << pos << "]";
+    }
+  }
+#endif
+}
+
+void MEM::Integrand::extend_PS_nodebug(MEM::PS &ps,
+                                       const MEM::PSPart::PSPart &part,
+                                       const double &E, const double &M,
+                                       const TVector3 &dir) const {
+  double E_phys = TMath::Max(E, M);
+  double P = sqrt(E_phys * E_phys - M * M);
+  ps.set(part,
+         MEM::GenPart(TLorentzVector(dir * P, E_phys), TFType::Unknown, 0));
+}
+
+int MEM::Integrand::create_PS_LL(MEM::PS &ps, const double *x,
+                                 const vector<int> &perm) const {
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\tIntegrand::create_PS_LL(): START";
+  }
+#endif
+
+  // corrupted phase space
+  int accept{0};
+
+  // store temporary values to build four-vectors
+  double E{0.};
+  double E_LOW{0.};
+  double E_HIGH{0.};
+  double E_REC{numeric_limits<double>::max()};
+  TVector3 dir(1., 0., 0.);
+  TFType::TFType tftype = TFType::Unknown;
+
+  // map a quark to an index inside the obs_ collections
+  size_t nl_q1 = map_to_part.find(PSPart::q1)->second;
+  size_t nj_b1 = map_to_part.find(PSPart::b1)->second;
+  size_t nl_q2 = map_to_part.find(PSPart::q2)->second;
+  size_t nj_b2 = map_to_part.find(PSPart::b2)->second;
+  size_t nj_b = map_to_part.find(PSPart::b)->second;
+  size_t nj_bbar = map_to_part.find(PSPart::bbar)->second;
+
+  /////  PSPart::q1
+  MEM::Object *lep1 = obs_leptons[nl_q1];
+  dir = lep1->p4().Vect().Unit();
+  E = lep1->p4().E();
+  extend_PS(ps, PSPart::q1, E, ML, dir, nl_q1, PSVar::cos_q1, PSVar::phi_q1,
+            PSVar::E_q1, TFType::muReco, int(lep1->getObs(Observable::CHARGE)));
+
+  /////  PSPart::qbar1
+  dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar1)->second]));
+  dir.SetPhi(x[map_to_var.find(PSVar::phi_qbar1)->second]);
+  E = solve(ps.lv(PSPart::q1), DMW2, ML, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar1, E, 0., dir, -1, PSVar::cos_qbar1,
+            PSVar::phi_qbar1, PSVar::E_qbar1, TFType::MET, 0);
+
+  /////  PSPart::b1
+  if (perm[nj_b1] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b1]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b1)->second]);
+    tftype = (perm[nj_b1] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q1) + ps.lv(PSPart::qbar1), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b1, E, MB, dir, perm[nj_b1], PSVar::cos_b1,
+            PSVar::phi_b1, PSVar::E_b1, tftype, 0);
+
+  /////  PSPart::q2
+  MEM::Object *lep2 = obs_leptons[nl_q2];
+  dir = lep2->p4().Vect().Unit();
+  E = lep2->p4().E();
+  extend_PS(ps, PSPart::q2, E, ML, dir, nl_q2, PSVar::cos_q2, PSVar::phi_q2,
+            PSVar::E_q2, TFType::muReco, int(lep2->getObs(Observable::CHARGE)));
+
+  /////  PSPart::qbar2
+  dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar2)->second]));
+  dir.SetPhi(x[map_to_var.find(PSVar::phi_qbar2)->second]);
+  E = solve(ps.lv(PSPart::q2), DMW2, ML, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar2, E, 0., dir, -1, PSVar::cos_qbar2,
+            PSVar::phi_qbar2, PSVar::E_qbar2, TFType::MET, 0);
+
+  //  PSVar::cos_b2, PSVar::phi_b2, PSVar::E_b2
+  if (perm[nj_b2] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b2]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b2)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b2)->second]);
+    tftype = (perm[nj_b2] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q2) + ps.lv(PSPart::qbar2), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b2, E, MB, dir, perm[nj_b2], PSVar::cos_b2,
+            PSVar::phi_b2, PSVar::E_b2, tftype, 0);
+
+  /////  PSPart::b
+  if (perm[nj_b] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b]];
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_b] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_b)->second]);
+  extend_PS(ps, PSPart::b, E, MB, dir, perm[nj_b], PSVar::cos_b, PSVar::phi_b,
+            PSVar::E_b, tftype, 0);
+
+  /////  PSPart::bbar
+  if (perm[nj_bbar] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_bbar]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_bbar)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_bbar)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_bbar] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = hypo == Hypothesis::TTBB
+          ? E_LOW +
+                (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_bbar)->second])
+          : solve(ps.lv(PSPart::b), DMH2, MB, dir, E_REC, accept);
+  extend_PS(ps, PSPart::bbar, E, MB, dir, perm[nj_bbar], PSVar::cos_bbar,
+            PSVar::phi_bbar, PSVar::E_bbar, tftype, 0);
+
+  // protect against collinear radiation for TTBB
+  if (hypo == Hypothesis::TTBB) {
+    LV lv_b = ps.lv(PSPart::b);
+    LV lv_bbar = ps.lv(PSPart::bbar);
+    if (lv_b.Pt() < 0. || lv_bbar.Pt() < 0. || deltaR(lv_b, lv_bbar) < 0.3) {
+      accept = -1;
+      VLOG(2) << "Skip this PS because of collinearity: [" << lv_b.Pt() << ", "
+               << lv_bbar.Pt() << ", " << deltaR(lv_b, lv_bbar) << "]";
+    }
+  }
+
+  return accept;
+}
+
+int MEM::Integrand::create_PS_HH(MEM::PS &ps, const double *x,
+                                 const vector<int> &perm) const {
+  // corrupted phase space
+  int accept{0};
+
+  // store temporary values to build four-vectors
+  double E{0.};
+  double E_LOW{0.};
+  double E_HIGH{0.};
+  double E_REC{numeric_limits<double>::max()};
+  TVector3 dir(1., 0., 0.);
+  TFType::TFType tftype;
+
+  // map a quark to an index inside the obs_ collections
+  size_t nj_q1 = map_to_part.find(PSPart::q1)->second;
+  size_t nj_qbar1 = map_to_part.find(PSPart::qbar1)->second;
+  size_t nj_b1 = map_to_part.find(PSPart::b1)->second;
+  size_t nj_q2 = map_to_part.find(PSPart::q2)->second;
+  size_t nj_qbar2 = map_to_part.find(PSPart::qbar2)->second;
+  size_t nj_b2 = map_to_part.find(PSPart::b2)->second;
+  size_t nj_b = map_to_part.find(PSPart::b)->second;
+  size_t nj_bbar = map_to_part.find(PSPart::bbar)->second;
+
+  /////  PSPart::q1
+  if (perm[nj_q1] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_q1]];
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_Q);
+    E_HIGH = obj->getObs(Observable::E_HIGH_Q);
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_q1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_q1)->second]);
+    E_LOW = 1.0; //MQ;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_q1] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_q1)->second]);
+  extend_PS(ps, PSPart::q1, E, MQ, dir, perm[nj_q1], PSVar::cos_q1,
+            PSVar::phi_q1, PSVar::E_q1, tftype, 0);
+
+  /////  PSPart::qbar1
+  if (perm[nj_qbar1] >= 0) {
+    dir = obs_jets[perm[nj_qbar1]]->p4().Vect().Unit();
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_qbar1)->second]);
+    tftype = (perm[nj_qbar1] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+
+  E = solve(ps.lv(PSPart::q1), DMW2, MQ, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar1, E, MQ, dir, perm[nj_qbar1], PSVar::cos_qbar1,
+            PSVar::phi_qbar1, PSVar::E_qbar1, tftype, 0);
+
+  /////  PSPart::b1
+  if (perm[nj_b1] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b1]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b1)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b1)->second]);
+    tftype = (perm[nj_b1] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q1) + ps.lv(PSPart::qbar1), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b1, E, MB, dir, perm[nj_b1], PSVar::cos_b1,
+            PSVar::phi_b1, PSVar::E_b1, tftype, 0);
+
+  /////  PSPart::q2
+  if (perm[nj_q2] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_q2]];
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_Q);
+    E_HIGH = obj->getObs(Observable::E_HIGH_Q);
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_q2)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_q2)->second]);
+    E_LOW = 1.0; //MQ;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_q2] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_q2)->second]);
+  extend_PS(ps, PSPart::q2, E, MQ, dir, perm[nj_q2], PSVar::cos_q2,
+            PSVar::phi_q2, PSVar::E_q2, tftype, 0);
+
+  /////  PSPart::qbar2
+  if (perm[nj_qbar2] >= 0) {
+    dir = obs_jets[perm[nj_qbar2]]->p4().Vect().Unit();
+    tftype = TFType::qReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_qbar2)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_qbar2)->second]);
+    tftype = (perm[nj_qbar2] == -1 ? TFType::qLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q2), DMW2, MQ, dir, E_REC, accept);
+  extend_PS(ps, PSPart::qbar2, E, MQ, dir, perm[nj_qbar2], PSVar::cos_qbar2,
+            PSVar::phi_qbar2, PSVar::E_qbar2, tftype, 0);
+
+  /////  PSPart::b2
+  if (perm[nj_b2] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b2]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b2)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b2)->second]);
+    tftype = (perm[nj_b2] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = solve(ps.lv(PSPart::q2) + ps.lv(PSPart::qbar2), DMT2, MB, dir, E_REC,
+            accept);
+  extend_PS(ps, PSPart::b2, E, MB, dir, perm[nj_b2], PSVar::cos_b2,
+            PSVar::phi_b2, PSVar::E_b2, tftype, 0);
+
+  /////  PSPart::b
+  if (perm[nj_b] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_b]];
+    dir = obj->p4().Vect().Unit();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_b)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_b)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_b] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = E_LOW + (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_b)->second]);
+  extend_PS(ps, PSPart::b, E, MB, dir, perm[nj_b], PSVar::cos_b, PSVar::phi_b,
+            PSVar::E_b, tftype, 0);
+
+  /////  PSPart::bbar
+  if (perm[nj_bbar] >= 0) {
+    MEM::Object *obj = obs_jets[perm[nj_bbar]];
+    dir = obj->p4().Vect().Unit();
+    E_REC = obj->p4().E();
+    E_LOW = obj->getObs(Observable::E_LOW_B);
+    E_HIGH = obj->getObs(Observable::E_HIGH_B);
+    tftype = TFType::bReco;
+  } else {
+    dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_bbar)->second]));
+    dir.SetPhi(x[map_to_var.find(PSVar::phi_bbar)->second]);
+    E_LOW = MB;
+    E_HIGH = TMath::Min(cfg.emax,
+                        2 * MEM::TF_ACC_param[1] / TMath::Sin(dir.Theta()));
+    //E_HIGH = cfg.emax;
+    tftype = (perm[nj_bbar] == -1 ? TFType::bLost : TFType::Unknown);
+  }
+  E = hypo == Hypothesis::TTBB
+          ? E_LOW +
+                (E_HIGH - E_LOW) * (x[map_to_var.find(PSVar::E_bbar)->second])
+          : solve(ps.lv(PSPart::b), DMH2, MB, dir, E_REC, accept);
+  extend_PS(ps, PSPart::bbar, E, MB, dir, perm[nj_bbar], PSVar::cos_bbar,
+            PSVar::phi_bbar, PSVar::E_bbar, tftype, 0);
+
+  // protect against collinear radiation for TTBB
+  if (hypo == Hypothesis::TTBB) {
+    LV lv_b = ps.lv(PSPart::b);
+    LV lv_bbar = ps.lv(PSPart::bbar);
+    if (lv_b.Pt() < 0. || lv_bbar.Pt() < 0. || deltaR(lv_b, lv_bbar) < 0.3) {
+      accept = -1;
+      VLOG(2) << "Skip this PS because of collinearity: [" << lv_b.Pt() << ", "
+               << lv_bbar.Pt() << ", " << deltaR(lv_b, lv_bbar) << "]";
+    }
+  }
+
+  VLOG(2) << "Integrand::create_PS_HH(): END";
+
+  return accept;
+}
+
+int MEM::Integrand::create_PS_TTH(MEM::PS &ps, const double *x,
+                                  const vector<int> &perm) const {
+  VLOG(2) << "Integrand::create_PS_TTH(): START";
+
+  // corrupted phase space
+  int accept{0};
+
+  // store temporary values to build four-vectors
+  double P{0.};
+  TVector3 dir(1., 0., 0.);
+
+  dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_t)->second]));
+  dir.SetPhi(x[map_to_var.find(PSVar::phi_t)->second]);
+  P = x[map_to_var.find(PSVar::P_t)->second];
+  extend_PS_nodebug(ps, PSPart::t, sqrt(P * P + MTOP2), MTOP, dir);
+
+  dir.SetTheta(TMath::ACos(x[map_to_var.find(PSVar::cos_tbar)->second]));
+  dir.SetPhi(x[map_to_var.find(PSVar::phi_tbar)->second]);
+  P = x[map_to_var.find(PSVar::P_tbar)->second];
+  extend_PS_nodebug(ps, PSPart::tbar, sqrt(P * P + MTOP2), MTOP, dir);
+
+  double Px = -ps.lv(PSPart::t).Px() - ps.lv(PSPart::tbar).Px();
+  double Py = -ps.lv(PSPart::t).Py() - ps.lv(PSPart::tbar).Py();
+  dir = TVector3(Px, Py, x[map_to_var.find(PSVar::Pz_h)->second]);
+  extend_PS_nodebug(ps, PSPart::h, sqrt(dir.Mag2() + MH2), MH, dir.Unit());
+
+  return accept;
+}
+
+              
+double MEM::Integrand::probability(const double *x, const std::size_t n_perm, vector<double>& derivs, vector<double>& variations) {
+  VLOG(2) << "Integrand::probability(): START";
+  
+  // the total probability
+  double p{1.0};
+  if (!cfg.int_code) return p;
+  
+  // create phase-space point and test if it is physical
+  PS ps(ps_dim);
+  const auto perm = perm_indexes_assumption.at(n_perm);
+  int accept = create_PS(ps, x, perm);
+  
+#ifdef DEBUG_MODE
+  if (accept > 0 && VLOG_IS_ON(2)) {
+    ostringstream os;
+    ps.print(os);
+    VLOG(2) << "PS:" << os.str();
+  }
+#endif
+  
+  if (accept < 0) {
+    VLOG(2) << "CORRUPTED PS (no solution): return 0.";
+    ++(const_cast<Integrand *>(this)->n_skip);
+    //if (this->n_skip > 100) {
+    //    throw std::runtime_error("too many corrupted PS!");
+    //}
+    
+    return 0.;
+  }
+  
+  const auto p_const = constants();
+  
+  vector<double> transfer_derivs;
+  vector<double> transfer_variations;
+  const auto p_tf = transfer(ps, perm_indexes_assumption[n_perm], accept, transfer_derivs, transfer_variations);
+  
+  if (cfg.save_permutations) {
+    this->permutation_probas_constants.at(n_perm).push_back(p_const);
+    this->permutation_probas_transfer.at(n_perm).push_back(p_tf);
+  }
+  
+  // Skip ME calc if transfer function is 0
+  if (p_tf == 0.0) {
+    this->tf_zero += 1;
+    if (cfg.save_permutations) {
+      this->permutation_probas_me.at(n_perm).push_back(0.0);
+    }
+    return 0;
+  }
+
+//  if (cfg.tf_suppress && accept >= cfg.tf_suppress) {
+//    this->tf_zero += 1;
+//    VLOG(3) << "Transfer functions out-of-range " << accept
+//    << " times: return from this PS before calculatin matrix()"
+//    << endl;
+//    return 0.;
+//  }
+  
+  const auto p_mat = matrix(ps);
+  //const auto p_mat = 1.0;
+  if (cfg.save_permutations) {
+    this->permutation_probas_me.at(n_perm).push_back(p_mat);
+  }
+  //cout << "p[" << n_perm << "]=" << p_tf << " " << p_mat << endl;
+  p = p_const * p_tf * p_mat;
+  for (auto v : transfer_derivs) {
+    derivs.push_back(p_const * v * p_mat);
+  }
+  for (auto v : transfer_variations) {
+    variations.push_back(p_const * v * p_mat);
+  }
+  return p;
+}
+
+double MEM::Integrand::matrix(const PS &ps) const {
+  if (fs == FinalState::TTH) {
+    return matrix_nodecay(ps);
+  }
+
+  double m{1.};
+
+  double x1{0.};  // x1 fraction
+  double x2{0.};  // x2 fraction
+
+  LV lv_q1 = ps.lv(PSPart::q1);
+  LV lv_qbar1 = ps.lv(PSPart::qbar1);
+  LV lv_b1 = ps.lv(PSPart::b1);
+  LV lv_q2 = ps.lv(PSPart::q2);
+  LV lv_qbar2 = ps.lv(PSPart::qbar2);
+  LV lv_b2 = ps.lv(PSPart::b2);
+  LV lv_b = ps.lv(PSPart::b);
+  LV lv_bbar = ps.lv(PSPart::bbar);
+  LV lv_additional_jet = ps.lv(PSPart::gluon_rad);
+
+  VLOG(2) << "Filling m..." << endl
+           << "Check masses: m(W1)=" << (lv_q1 + lv_qbar1).M() << endl
+           << ", m(t1)=" << (lv_q1 + lv_qbar1 + lv_b1).M() << endl
+           << ", m(W2)=" << (lv_q2 + lv_qbar2).M() << endl
+           << ", m(t2)=" << (lv_q2 + lv_qbar2 + lv_b2).M() << endl
+           << ", m(H)=" << (lv_b + lv_bbar).M();
+
+  m *= t_decay_amplitude(lv_q1, lv_qbar1, lv_b1, ps.charge(PSPart::q1));
+  m *= t_decay_amplitude(lv_q2, lv_qbar2, lv_b2, ps.charge(PSPart::q2));
+  m *= H_decay_amplitude(lv_b, lv_bbar);
+  m *= scattering(lv_q1 + lv_qbar1 + lv_b1,  // top
+                  lv_q2 + lv_qbar2 + lv_b2,  // antitop
+                  lv_b, lv_bbar, lv_additional_jet, x1, x2);
+  m *= pdf(x1, x2, lv_b.Pt() + lv_bbar.Pt());
+
+  if (TMath::IsNaN(m)) {
+    LOG(ERROR) << "matrix() returned a NaN...";
+    return 0.;
+  }
+
+  return m;
+}
+
+double MEM::Integrand::matrix_nodecay(const PS &ps) const {
+  double m{1.};
+
+  double x1{0.};  // x1 fraction
+  double x2{0.};  // x2 fraction
+
+  LV lv_t = ps.lv(PSPart::t);
+  LV lv_tbar = ps.lv(PSPart::tbar);
+  LV lv_b = fs == FinalState::TTH ? ps.lv(PSPart::h) : ps.lv(PSPart::b);
+  LV lv_bbar =
+      fs == FinalState::TTH ? LV(1e-06, 0., 0., 1e-06) : ps.lv(PSPart::bbar);
+  LV lv_h = lv_b + lv_bbar;
+  LV lv_additional_jet = ps.lv(PSPart::gluon_rad);
+
+  VLOG(2) << "\t\tFilling m...";
+  VLOG(2) << "\t\tCheck masses: m(t1)=" << lv_t.M()
+           << ", m(t2)=" << lv_tbar.M() << ", m(h)= " << (lv_b + lv_bbar).M();
+
+  LV additional_jet;
+  m *= scattering(lv_t, lv_tbar, lv_b, lv_bbar, lv_additional_jet, x1, x2);
+  m *= pdf(x1, x2, lv_h.Pt());
+
+  // check this: it won't work for tt+bb
+  double Jac = lv_t.Beta() * lv_t.Vect().Mag() / 2 * lv_tbar.Beta() *
+               lv_tbar.Vect().Mag() / 2 * (1. / lv_h.E() / 2);
+  m *= Jac;
+
+  if (TMath::IsNaN(m)) {
+    LOG(ERROR) << "\tmatrix_nodecay() returned a NaN...";
+    return 0.;
+  }
+
+  return m;
+}
+
+double MEM::Integrand::transfer(const PS &ps, const vector<int> &perm,
+                                int &accept, vector<double>& derivs, vector<double>& variations) const {
+  double w_nonjet = 1.0;
+  vector<double> w;
+  vector<double> local_derivs;
+  for (unsigned int i=0; i<obs_jets.size(); i++) {
+    w.push_back(1.0);
+    local_derivs.push_back(0.0);
+    derivs.push_back(0.0);
+  }
+  for (int i=0; i<this->cfg.num_jet_variations; i++) {
+    variations.push_back(1.0);
+  }
+  vector<int> jet_indices;
+  
+  if (!(cfg.int_code & IntegrandType::Transfer)) {
+   return 1.0;
+  }
+  if (fs == FinalState::TTH) {
+   return 1.0;
+  }
+
+  double nu_x{0.};       // total nu's px
+  double nu_y{0.};       // total nu's py
+  double corr_nu_x{0.};  // sum of dPx
+  double corr_nu_y{0.};  // sum of dPy
+  double rho_x{0.};      // recoil px
+  double rho_y{0.};      // recoil py
+  double pT_x{0.};       // pT px
+  double pT_y{0.};       // pT py
+
+  // subtract MET from the recoil
+  rho_x -= obs_mets[0]->p4().Px();
+  rho_y -= obs_mets[0]->p4().Py();
+
+  // Dealing with jets and leptons
+  PSMap::const_iterator p;
+  
+  int num_variations = -1;
+  for (p = ps.begin(); p != ps.end(); ++p) {
+    MEM::Object *obj = nullptr;
+    
+    double deriv = 0.0;
+    vector<double> obj_variations;
+    
+    const auto psvar = p->first;
+    const auto second = p->second;
+    DVLOG(2) << "ps point var=" << psvar << " particle: pt=" << second.lv.Pt() << " type=" << second.type << endl;
+    if (isLepton(p->second.type)) {
+      obj = obs_leptons[map_to_part.find(psvar)->second];
+      // subtract from recoil
+      rho_x -= obj->p4().Px();
+      rho_y -= obj->p4().Py();
+
+      // subtract from total pT
+      pT_x -= p->second.lv.Px();
+      pT_y -= p->second.lv.Py();
+      VLOG(2) << "\tDealing with a lepton..." << endl
+               << "\t\trho_x -= " << obj->p4().Px()
+               << ", pT_x -= " << p->second.lv.Px() << endl
+               << "\t\trho_y -= " << obj->p4().Py()
+               << ", pT_y -= " << p->second.lv.Py() << endl;
+      continue;
+    }  // is lepton
+
+    if (isNeutrino(p->second.type)) {
+      // add up to neutrino
+      nu_x += p->second.lv.Px();
+      nu_y += p->second.lv.Py();
+
+      // subtract from total pT
+      pT_x -= p->second.lv.Px();
+      pT_y -= p->second.lv.Py();
+      VLOG(2) << "Dealing with a neutrino..." << endl
+               << "nu_x -= " << p->second.lv.Px()
+               << ", pT_x -= " << p->second.lv.Px() << endl
+               << "nu_y -= " << p->second.lv.Py()
+               << ", pT_y -= " << p->second.lv.Py() << endl;
+      continue;
+    } //is neutrino
+
+    // observables and generated-level quantities
+    // if the parton is matched, test value of jet energy
+
+    // subtract from total pT
+    pT_x -= p->second.lv.Px();
+    pT_y -= p->second.lv.Py();
+
+    const double e_gen{p->second.lv.E()};
+    const double pt_gen{p->second.lv.Pt()};
+    const double eta_gen{p->second.lv.Eta()};
+    const auto idx_part = map_to_part.find(psvar)->second;
+
+    int jet_indx = -1;
+    // in case particle index outside of permutation, should not be considered
+    if (idx_part < perm.size()) {
+      jet_indx = perm.at(idx_part);
+    } else {
+      return 1.0;
+    }
+    double e_rec{0.};
+
+    if (jet_indx >= 0) {
+      jet_indices.push_back(jet_indx);
+      obj = obs_jets[jet_indx];
+      assert(obj != nullptr);
+      if (num_variations == -1) {
+        num_variations = (int)obj->p4_variations.size();
+      } else {
+        if (num_variations != (int)obj->p4_variations.size()) {
+          throw std::runtime_error("incorrect number of variations supplied");
+        }
+      }
+      e_rec = obj->p4().E();
+      rho_x -= obj->p4().Px();
+      rho_y -= obj->p4().Py();
+
+      // Enux = Etot * sin(theta) * cos(phi)
+      // Px = |P| * sin(theta) * cos(phi) -> Px/P = sin(theta) * cos(phi)
+      corr_nu_x += (e_rec - e_gen) * obj->p4().Px() / obj->p4().P();
+      corr_nu_y += (e_rec - e_gen) * obj->p4().Py() / obj->p4().P();
+
+      // if this flag is true, the TF are multiplied by the range step-functions
+      // N.B false by default
+      if (cfg.tf_in_range) {
+        double e_gen_min, e_gen_max;
+        if (obj->isSet(Observable::BTAG) &&
+            obj->getObs(Observable::BTAG) < 0.5) {
+          e_gen_min = obj->getObs(Observable::E_LOW_Q);
+          e_gen_max = obj->getObs(Observable::E_HIGH_Q);
+        } else if (obj->isSet(Observable::BTAG) &&
+                   obj->getObs(Observable::BTAG) > 0.5) {
+          e_gen_min = obj->getObs(Observable::E_LOW_B);
+          e_gen_max = obj->getObs(Observable::E_HIGH_B);
+        } else {
+          e_gen_min = 0.;
+          e_gen_max = numeric_limits<double>::max();
+        }
+        if (!(e_gen >= e_gen_min && e_gen <= e_gen_max)) {
+          return 0.0;
+        }
+      }
+
+      VLOG(2) << "\tDealing with a jet..." << endl
+               << "\t\trho_x -= " << obj->p4().Px()
+               << ", pT_x -= " << p->second.lv.Px() << endl
+               << "\t\trho_y -= " << obj->p4().Py()
+               << ", pT_y -= " << p->second.lv.Py() << endl
+               << "\t\tdE_x   = "
+               << (e_rec - e_gen) * obj->p4().Px() / obj->p4().P() << endl
+               << "\t\tdE_y   = "
+               << (e_rec - e_gen) * obj->p4().Py() / obj->p4().P() << endl;
+    }  // jet index >= 0
+    else {
+      VLOG(2) << "\tDealing with a missed jet..." << endl
+               << "\t\trho_x -= " << 0 << ", pT_x -= " << p->second.lv.Px()
+               << "\t\trho_y -= " << 0 << ", pT_y -= " << p->second.lv.Py()
+               << endl;
+    }
+
+    // build x,y vectors
+    double y[1] = {e_rec};
+    double x[2] = {e_gen, eta_gen};
+
+    // Try to calculate using externally supplied transfer functions
+    // N.B.: new transfer functions are functions of jet pt
+    if (cfg.transfer_function_method == TFMethod::External && obj != nullptr) {
+      assert(obj->getNumTransferFunctions() > 0);
+      x[0] = pt_gen;
+      double _w = transfer_function2(
+        obj, x, p->second.type,
+        obj_variations, true);
+      //cout << "jet " << pt_gen << " " << obj->p4().Pt() << " " << _w << endl;
+      w.at(jet_indx) = _w;
+      local_derivs.at(jet_indx) = deriv;
+      for (unsigned int i=0; i<obj_variations.size(); i++) {
+        variations.at(i) *= obj_variations.at(i);
+      }
+      
+    }
+    //Jet is outside of acceptance, need to get global TF
+    else if (cfg.transfer_function_method == TFMethod::External &&
+             obj == nullptr) {
+      int eta_bin = eta_to_bin(eta_gen, true);
+      // if outside acceptance, return 1.0
+      if (eta_bin < 0) {
+        continue;
+      }
+
+      // pass the efficiency function as a pointer,
+      // need to remove const modifier as TF1::Eval does not specify const
+      x[0] = pt_gen;
+      double _w = 1.0;
+      if( p->second.type != TFType::Unknown){
+	const auto tf_pars = get_tf_global(p->second.type, eta_bin);
+	_w = transfer_function_lost(cfg.jet_pt_threshold, tf_pars, x);
+      }
+      w_nonjet *= _w;
+    }
+
+    // Calculate using internal transfer functions
+    else {
+      double _w = transfer_function(y, x, p->second.type, accept,
+                                    cfg.tf_offscale, debug_code);
+      w_nonjet *= _w;
+    }
+  }
+
+  // Dealing with the MET
+  double y_MET[2] = {obs_mets[0]->p4().Px(), obs_mets[0]->p4().Py()};
+  double x_Nu[2] = {nu_x - corr_nu_x, nu_y - corr_nu_y};
+  if (!(cfg.int_code & IntegrandType::Recoil)) {
+    x_Nu[0] += corr_nu_x;
+    x_Nu[1] += corr_nu_y;
+  }
+  double _w = transfer_function(y_MET, x_Nu, TFType::MET, accept, cfg.tf_offscale,
+                         debug_code);
+  w_nonjet *= _w;
+
+  // Dealing with the recoil using an empirical Sudakov term
+  double y_rho[1] = {(extra_jets > 0 ? TF_RECOIL_param[2] + 1.
+                                     : sqrt(rho_x * rho_x + rho_y * rho_y))};
+  double x_pT[1] = {sqrt(pT_x * pT_x + pT_y * pT_y)};
+  if (cfg.int_code & IntegrandType::Sudakov) {
+    double _w = transfer_function(y_rho, x_pT, TFType::Recoil, accept, cfg.tf_offscale,
+                           debug_code);
+    w_nonjet *= _w;
+  }
+  
+  //now we need to calculate the final transfer function as a product
+  //of the derivative/non-derivative terms
+  //for the i-th jet, we always need to take the derivative with respect
+  //to that jet, whereas the other transfer functions are the original ones
+  //dW/dx_i = w_1 * w_2 * ... * dw_i/dx * ...
+  for (unsigned int j=0; j < local_derivs.size(); j++) {
+    double d = 1.0;
+    
+    for (unsigned int i=0; i < w.size(); i++) {
+      if (i==j) { //took derivative with respect to this jet
+        d *= local_derivs.at(i);
+      } else {
+        d *= w.at(i);
+      }
+    }
+    derivs[j] = d * w_nonjet;
+  }
+  
+  //Calculate final transfer function product
+  double w_ret = 1.0;
+  //cout << "w= ";
+  for (auto _w : w) {
+    //cout << _w << " ";
+    w_ret *= _w;
+  }
+  //cout << w_nonjet << endl;
+
+  w_ret *= w_nonjet;
+  
+  for (int i=0; i<this->cfg.num_jet_variations; i++) {
+    variations[i] *= w_nonjet;
+  }
+
+  if (TMath::IsNaN(w_ret)) {
+    cout << "transfer() returned a NaN..." << endl;
+    // throw std::runtime_error("transfer() returned a NaN...");
+    return 0.;
+  }
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\tTotal transfer function: " << w_ret << " (" << accept
+             << " functions are out-of-range by more than " << cfg.tf_offscale
+             << " sigmas";
+  }
+#endif
+
+  return w_ret;
+}
+
+double *get_phase_space(std::initializer_list<LV> vecs) {
+  double *ps = new double[5 * vecs.size()];
+  int i = 0;
+  for (auto &v : vecs) {
+    ps[5 * i + 0] = v.E();
+    ps[5 * i + 1] = v.Px();
+    ps[5 * i + 2] = v.Py();
+    ps[5 * i + 3] = v.Pz();
+    ps[5 * i + 4] = v.M();
+    i += 1;
+  }
+  return ps;
+}
+
+double MEM::Integrand::scattering(const LV &top, const LV &atop, const LV &b1,
+                                  const LV &b2, const LV &additional_jet,
+                                  double &x1, double &x2) const {
+  // return value (address passed to OpenLoops)
+  double M2{1.};
+
+  // temporary objects
+  LV t, tx, b, bx, h, sum;
+  t.SetPtEtaPhiM(top.Pt(), top.Eta(), top.Phi(), MTOP);
+  tx.SetPtEtaPhiM(atop.Pt(), atop.Eta(), atop.Phi(), MTOP);
+  b.SetPtEtaPhiM(b1.Pt(), b1.Eta(), b1.Phi(), 0.);
+  bx.SetPtEtaPhiM(b2.Pt(), b2.Eta(), b2.Phi(), 0.);
+  h.SetPtEtaPhiM((b1 + b2).Pt(), (b1 + b2).Eta(), (b1 + b2).Phi(), MH);
+  LV rad(additional_jet.Px(), additional_jet.Py(), additional_jet.Pz(),
+         additional_jet.E());
+
+#ifdef DEBUG_MODE
+  for (auto &v : {t, tx, b, bx, h}) {
+    assert(GOOD_VEC(v));
+  }
+#endif
+
+  const bool has_rad = additional_jet.E() > 0 &&
+                       (cfg.int_code & IntegrandType::AdditionalRadiation);
+
+  TLorentzVector vSum;
+  // the total sum (needed to get the boost factor);
+  if (hypo == Hypothesis::TTH) {
+    vSum = t + tx + h + rad;
+  } else if (hypo == Hypothesis::TTBB) {
+    vSum = t + tx + b + bx + rad;
+  }
+  assert(GOOD_VEC(vSum));
+
+  if (vSum.E() > cfg.sqrts) {
+    x1 = .99;
+    x2 = .99;
+    return 0.;
+  }
+
+  // boost such that SumPx = SumPy = 0
+  // this is needed to later construct the gluon momenta such that they have
+  // only
+  // the Pz component
+  TVector3 boostPt(vSum.Px() / vSum.E(), vSum.Py() / vSum.E(), 0.0);
+  // bool apply_boost{vSum.Px() > 1. || vSum.Py() > 1.};
+  const bool apply_boost = true;
+
+  if (apply_boost) {  // some tolerance!
+    t.Boost(-boostPt);
+    tx.Boost(-boostPt);
+    rad.Boost(-boostPt);
+    VLOG(2) << "Boost system along the (x,y) plane: beta = (" << boostPt.Px()
+             << ", " << boostPt.Py() << ", " << boostPt.Pz() << ")" << endl;
+  }
+
+  if (hypo == Hypothesis::TTH) {
+    if (apply_boost) {
+      h.Boost(-boostPt);
+      // fix for rounding
+      double hPx = -(t.Px() + tx.Px() + rad.Px());
+      double hPy = -(t.Py() + tx.Py() + rad.Py());
+      double hPz = h.Pz();
+      h.SetPxPyPzE(hPx, hPy, hPz,
+                   sqrt(hPx * hPx + hPy * hPy + hPz * hPz + MH * MH));
+    }
+    sum = t + tx + h + rad;
+  } else if (hypo == Hypothesis::TTBB) {
+    if (apply_boost) {
+      b.Boost(-boostPt);
+      bx.Boost(-boostPt);
+      // fix for rounding
+      double bPx = -(t.Px() + tx.Px() + bx.Px() + rad.Px());
+      double bPy = -(t.Py() + tx.Py() + bx.Py() + rad.Py());
+      double bPz = b.Pz();
+      b.SetPxPyPzE(bPx, bPy, bPz, sqrt(bPx * bPx + bPy * bPy + bPz * bPz));
+    }
+    sum = t + tx + b + bx + rad;
+  }
+
+  // update x1 and x2
+  double E = sum.E();
+  double Pz = sum.Pz();
+  x1 = (Pz + E) / cfg.sqrts;
+  x2 = (-Pz + E) / cfg.sqrts;
+  if (!(cfg.int_code & IntegrandType::ScattAmpl)) return M2;
+
+  // create gluon p4s
+  const LV g1(0.0, 0.0, (E + Pz) / 2., (E + Pz) / 2.);
+  const LV g2(0.0, 0.0, -(E - Pz) / 2., (E - Pz) / 2.);
+
+  // print out LV to check inputs
+  //g1.Print();
+  //g2.Print();
+  //if (hypo == Hypothesis::TTH){ h.Print(); }
+  //if (hypo == Hypothesis::TTBB){
+  //  b.Print();
+  //  bx.Print();
+  //} 
+  //t.Print();
+  //tx.Print();
+  //rad.Print();
+
+   // phase space point
+  double *ps = 0;
+  int cur_proc_id = -1;
+
+  // call OpenLoops functions
+  if (hypo == Hypothesis::TTH) {
+    if (has_rad) {
+      ps = get_phase_space({g1, g2, h, t, tx, rad});
+      cur_proc_id = processes.at(Process::TTHj);
+    } else {
+      ps = get_phase_space({g1, g2, h, t, tx});
+      cur_proc_id = processes.at(Process::TTH);
+    }
+  } else if (hypo == Hypothesis::TTBB) {
+    if (has_rad) {
+      ps = get_phase_space({g1, g2, t, tx, b, bx, rad});
+      cur_proc_id = processes.at(Process::TTBBj);
+
+    } else {
+      ps = get_phase_space({g1, g2, t, tx, b, bx});
+      cur_proc_id = processes.at(Process::TTBB);
+
+    }
+  } else {
+    throw std::runtime_error("Undefined hypo");
+  }
+  ol_evaluate_tree(cur_proc_id, ps, &M2);
+  ((Integrand*)this)->scattering_counter++;
+  //M2 = cur_proc_id * rand();
+  delete[] ps;
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\t\tTotal (px,py,pz,E) = (" << sum.Px() << "," << sum.Py()
+             << "," << sum.Pz() << "," << sum.E() << ")";
+    VLOG(3) << "\t\tGluons (x1,x2)     = (" << x1 << "," << x2 << ")";
+    VLOG(3) << "\t\tM2 (OpenLoops)     = " << M2;
+  }
+#endif
+
+  return M2;
+}
+
+double MEM::Integrand::pdf(const double &x1, const double &x2,
+                           const double &dynamical) const {
+  double p{1.};
+  if (!(cfg.int_code & IntegrandType::PDF)) return p;
+
+  if (x1 > 0.99 || x2 > 0.99) {
+    return 0.;
+  }
+
+  double Q{2 * MTOP};
+  switch (hypo) {
+    case Hypothesis::TTH:
+      Q = (2 * MTOP + MH) / 2;
+      break;
+    case Hypothesis::TTBB:
+      Q = TMath::Sqrt(4 * MTOP * MTOP + TMath::Power(dynamical, 2));
+      break;
+    default:
+      break;
+  }
+  double f1 = 0;
+  double f2 = 0;
+  if (cfg.interpolate_pdf) {
+    if (hypo == Hypothesis::TTBB) {
+      f1 = gsl_interp2d_eval_extrap(pdf_interpolator_q_bkg, this->pdf_interp_x, this->pdf_interp_y, (double*)(this->pdf_interp_z), x1, Q, pdf_interpolator_accel_x, pdf_interpolator_accel_y) / x1;
+      f2 = gsl_interp2d_eval_extrap(pdf_interpolator_q_bkg, this->pdf_interp_x, this->pdf_interp_y, (double*)(this->pdf_interp_z), x2, Q, pdf_interpolator_accel_x, pdf_interpolator_accel_y) / x2;
+    } else if (hypo == Hypothesis::TTH) {
+      f1 = gsl_interp_eval(pdf_interpolator_q_sig, this->pdf_interp_x, this->pdf_interp_q_sig, x1, pdf_interpolator_accel_x) / x1;
+      f2 = gsl_interp_eval(pdf_interpolator_q_sig, this->pdf_interp_x, this->pdf_interp_q_sig, x2, pdf_interpolator_accel_x) / x2;
+    }
+  } else {
+    f1 = LHAPDF::xfx(0, x1, Q, 0) / x1;
+    f2 = LHAPDF::xfx(0, x2, Q, 0) / x2;
+  }
+
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\t\tPDF(x1,Q)*PDF(x2,Q) = " << f1 << "*" << f2;
+  }
+#endif
+
+  p = (f1 * f2) / (x1 * x2);
+
+  return p;
+}
+
+double MEM::Integrand::constants() const {
+  double p{1.};
+  if (!(cfg.int_code & IntegrandType::Constant)) return p;
+  return TMath::Power((2. * PI), int(4 - 3 * ps_dim)) /
+         (cfg.sqrts * cfg.sqrts * cfg.sqrts * cfg.sqrts);
+}
+
+double MEM::Integrand::t_decay_amplitude(const TLorentzVector &q,
+                                         const TLorentzVector &qbar,
+                                         const TLorentzVector &b,
+                                         const int &charge_q) const {
+  double p{1.};
+  if (!(cfg.int_code & IntegrandType::DecayAmpl)) return p;
+
+  p *= BWTOP;
+
+  TLorentzVector w = q + qbar;
+  TLorentzVector t = w + b;
+  double InvJac = TMath::Abs(
+      2 * MW2 / qbar.E() * (w.E() - w.Vect().Dot(b.Vect().Unit()) / b.Beta()));
+  double Jac = (1. / InvJac) * q.Vect().Mag() * qbar.Vect().Mag() *
+               b.Vect().Mag() / (2 * 2 * 2);
+  if (cfg.int_code & IntegrandType::Jacobian) p *= Jac;
+
+  double x_e1 = 2 * (q * t) / MTOP2;
+  double x_e2 = 2 * (qbar * t) / MTOP2;
+
+  // if the flavour is determined, use formula. Otherwise, take average.
+  double m2 = charge_q != 0
+                  ? x_e1 * (1 - MUB - x_e1)
+                  : 0.5 * (x_e1 * (1 - MUB - x_e1) + x_e2 * (1 - MUB - x_e2));
+  m2 *= (32 * PI * MTOP4 * GEWK4 / (MW * GW));
+  if (m2 < 0) {
+    cerr << "\tIntegrand::t_decay_amplitude() returned negative |M2|..."
+         << endl;
+    return 0.;
+  }
+  p *= m2;
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\tIntegrand::t_decay_amplitude():";
+    VLOG(3) << "\t\tBreit-Wigner top = " << BWTOP << " GeV^-2";
+    VLOG(3) << "\t\tJacobian (Eqbar,Eb) -> (m2_qq, m2_qqb) = " << Jac
+             << " GeV";
+    VLOG(3) << "\t\t|M2|(t->bqq') = " << m2
+             << (charge_q == 0 ? " (charge symmetrised)" : "");
+    VLOG(3) << "\t\tTotal = " << p << " GeV^-1";
+  }
+#endif
+
+  return p;
+}
+
+double MEM::Integrand::H_decay_amplitude(const TLorentzVector &b,
+                                         const TLorentzVector &bbar) const {
+  double p{1.};
+  if (!(cfg.int_code & IntegrandType::DecayAmpl)) return p;
+
+  double InvJac{1.0};
+  double m2{1.0};
+  if (hypo == Hypothesis::TTH) {
+    p *= BWH;
+    InvJac = TMath::Abs(
+        2 * (b.E() - b.Vect().Dot(bbar.Vect().Unit()) / bbar.Beta()));
+    m2 = 2 * YB2 * MH2 * PSHBB;
+  }
+  double Jac = (1. / InvJac) * b.Vect().Mag() * bbar.Vect().Mag() / (2 * 2);
+  if (cfg.int_code & IntegrandType::Jacobian) p *= Jac;
+
+  p *= m2;
+
+#ifdef DEBUG_MODE
+  if (VLOG_IS_ON(3)) {
+    VLOG(3) << "\tIntegrand::H_decay_amplitude():";
+    if (hypo == Hypothesis::TTH) {
+      VLOG(3) << "\t\tBreit-Wigner Higgs = " << BWH << " GeV^-2";
+      VLOG(3) << "\t\tJacobian (Eb,Ebbar) -> (E_b, m2_bb) = " << Jac << " GeV";
+      VLOG(3) << "\t\t|M2|(t->bqq') = " << m2 << " GeV^2";
+      VLOG(3) << "\t\tTotal = " << p << " GeV";
+    } else {
+      VLOG(3) << "\t\tJacobian = " << Jac << " GeV^2";
+    }
+  }
+#endif
+
+  return p;
+}
+
+double MEM::Integrand::solve(const LV &p4_w, const double &DM2, const double &M,
+                             const TVector3 &e_b, const double &target,
+                             int &accept) const {
+  double a = DM2 / p4_w.E();
+  double b = TMath::Cos(p4_w.Angle(e_b));
+  if (M < 1e-03) {
+#ifdef DEBUG_MODE
+    if (VLOG_IS_ON(3)) {
+      VLOG(3) << "\t\tUse masless formula: " << a << "/(1-" << b
+               << ")=" << a / (1 - b);
+    }
+#endif
+    if (b < 1.)
+      return a / (1 - b);
+    else {
+      accept = -1;
+      return numeric_limits<double>::max();
+    }
+  }
+
+  // use adimensional 'a', account for velocity<1
+  a /= M;
+  b *= p4_w.Beta();
+  double a2 = a * a;
+  double b2 = b * b;
+
+  // this is needed to test the solutions
+  double discr = a2 + b2 - a2 * b2 - 1;
+
+  // make sure there is >0 solutions
+  if ((a2 + b2 - 1) < 0.) {
+#ifdef DEBUG_MODE
+    if (VLOG_IS_ON(3)) {
+      VLOG(3) << "\t\t(a2 + b2 - 1)<0. return max()";
+    }
+#endif
+    accept = -1;
+    return numeric_limits<double>::max();
+  }
+
+  // the roots
+  double g_p = (a + TMath::Abs(b) * sqrt(a2 + b2 - 1)) / (1 - b2);
+  double g_m = (a - TMath::Abs(b) * sqrt(a2 + b2 - 1)) / (1 - b2);
+
+  // make sure this is >1 ( g_m < g_p )
+  if (g_p < 1.0) {
+#ifdef DEBUG_MODE
+    if (VLOG_IS_ON(3)) {
+      VLOG(3) << "\t\tg_p=" << g_p << ": return max()";
+    }
+#endif
+    accept = -1;
+    return numeric_limits<double>::max();
+  }
+
+  // remove unphysical root
+  if (g_m < 1.0) g_m = g_p;
+
+  // test for the roots
+  if (b > 0) {
+    if (discr < 0) {
+      return (TMath::Abs(target - g_p * M) < TMath::Abs(target - g_m * M)
+                  ? g_p * M
+                  : g_m * M);
+    }
+    return g_p * M;
+  } else {
+    if (discr > 0) {
+      return g_m * M;
+    }
+  }
+
+  accept = -1;
+  return numeric_limits<double>::max();
+}
+
+void MEM::Integrand::setup_minimizer() {
+  minimizer->SetMaxFunctionCalls(1000000);
+  minimizer->SetMaxIterations(10000);
+  minimizer->SetTolerance(0.001);
+  minimizer->SetPrintLevel(0);
+  return;
+}
+
+void MEM::Integrand::refine_minimization(std::size_t &num_trials,
+                                         const ROOT::Math::Functor &toIntegrate,
+                                         const std::size_t &npar, double *xL,
+                                         double *xU) {
+  if (debug_code & DebugVerbosity::init) {
+    cout << "\trefine_minimization(): try to set quark energies to constant"
+         << endl;
+  }
+
+  while (num_trials < 2) {
+    if (minimizer != nullptr) delete minimizer;
+
+    minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "");
+    setup_minimizer();
+    minimizer->SetFunction(toIntegrate);
+
+    for (unsigned int np = 0; np < npar; ++np) {
+      string var_name = "par_" + std::to_string(np);
+      if (xU[np] == 1. && xL[np] == 0.) {
+        minimizer->SetFixedVariable(np, var_name, (xU[np] + xL[np]) / 2.);
+        if (debug_code & DebugVerbosity::init)
+          printf("\tParam[%u] = %s fixed to %.2f\n", np, var_name.c_str(),
+                 (xU[np] + xL[np]) / 2);
+      } else {
+        minimizer->SetLimitedVariable(
+            np, var_name.c_str(), (xU[np] + xL[np]) / 2, 5e-02, xL[np], xU[np]);
+        if (debug_code & DebugVerbosity::init)
+          printf("\tParam[%u] = %s set to %.2f. Range: [%.2f,%.2f]\n", np,
+                 var_name.c_str(), (xU[np] + xL[np]) / 2, xL[np], xU[np]);
+      }
+    }
+    ++num_trials;
+    minimizer->Minimize();
+  }
+
+  return;
+}
+
+const std::array<double, MEM::Object::NUM_TF_PARS> MEM::Integrand::get_tf_global(TFType::TFType type,
+                                         int etabin) const {
+  std::pair<TFType::TFType, int> p = std::make_pair(type, etabin);
+  if (tf_map.find(p) != tf_map.end()) {
+    return tf_map.at(p);
+  } else {
+    std::cerr << "could not find tf for " << type << " " << etabin << std::endl;
+    throw std::runtime_error("global tf == null");
+  }
+}

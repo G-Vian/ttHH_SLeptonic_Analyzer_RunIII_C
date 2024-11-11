@@ -1,0 +1,26 @@
+#ifndef TTH_TTHHYPOTHESISCOMBINATORICS_H
+#define TTH_TTHHYPOTHESISCOMBINATORICS_H
+
+#include <vector>
+#include <map>
+#include <string>
+#include "TLorentzVector.h"
+#include "HypothesisCombinatorics.h"
+//#include "TTHH/CommonClassifier/interface/HypothesisCombinatorics.h"
+//#include "TTHH/CommonClassifier/interface/MVAvarsJABDTtth.h"
+
+
+class tthHypothesisCombinatorics : public HypothesisCombinatorics
+{
+    public:
+    tthHypothesisCombinatorics(const std::string& weightpath = std::string(""), const std::string& optional_varstring = std::string(""));
+        ~tthHypothesisCombinatorics();
+
+        PermutationManager* getPermutator(){return &permutator;}
+
+    private:
+        static const unsigned int minJets = 6;
+        static PermutationManager permutator;
+};
+
+#endif

@@ -1,0 +1,39 @@
+#ifndef TTH_MVAVARSJABDTHH_H
+#define TTH_MVAVARSJABDTHH_H
+#include <vector>
+#include <map>
+#include <math.h>
+#include "TLorentzVector.h"
+#include "TMVA/Reader.h"
+#include "TTH/CommonClassifier/interface/CommonBDTvars.h"
+#include "TTH/CommonClassifier/interface/MVAvarsBase.h"
+
+// define unique indizes
+enum tHHIndexes {tHH_btoplep_idx, tHH_btophad_idx, tHH_h1dau1_idx, tHH_h1dau2_idx, tHH_h2dau3_idx, tHH_h2dau4_idx};
+
+// class to provide a variable container for ttH jet assignment hypothesis testing
+class MVAvarsJABDTthh : public MVAvarsBase
+{
+
+  public:
+    MVAvarsJABDTthh();
+    ~MVAvarsJABDTthh();
+
+    void FillMVAvarMap( const std::vector<TLorentzVector> &selectedLeptonP4,
+                        const std::vector<TLorentzVector> &selectedJetP4,
+                        const std::vector<double> &selectedJetCSV,
+                        const TLorentzVector &metP4,
+                        const std::vector<int> &jets_idx);
+
+    std::map<std::string, TLorentzVector> GetVectors(   const TLorentzVector &selectedLeptonP4,
+                                                        const std::vector<TLorentzVector> &selectedJetP4,
+                                                        const TLorentzVector &metP4,
+                                                        const std::vector<int> &jets_idx);
+
+    bool SkipEvent( const std::vector<TLorentzVector> &selectedJetP4,
+                    const std::vector<double> &selectedJetCSV,
+                    const std::vector<int> &jets_idx);
+
+  private:
+};
+#endif

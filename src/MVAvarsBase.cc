@@ -1,0 +1,160 @@
+//#include "TTH/CommonClassifier/interface/MVAvarsBase.h"
+#include "MVAvarsBase.h"
+
+using namespace std;
+
+MVAvarsBase::MVAvarsBase():
+    btagMcut(-99),
+    btagLcut(-99),
+    globalDefault(-1.5)
+{
+}
+
+MVAvarsBase::~MVAvarsBase()
+{
+}
+
+void MVAvarsBase::ResetVariableMap()
+{
+    for (auto it = variableMap.begin(); it != variableMap.end(); it++)
+	{
+	    if ((it->first.find("eta") != string::npos) and not (it->first.find("abs") != string::npos))
+		{
+		    it->second = -5.;
+		}
+	    else if (it->first.find("phi") != string::npos)
+		{
+		    it->second = -5.;
+		}
+	    else
+		{
+		    it->second = globalDefault;
+		}
+	}
+}
+
+void MVAvarsBase::SetWP(double WP){
+    btagMcut = WP;
+}
+
+void MVAvarsBase::SetLooseWP(double WPLoose){
+    btagLcut = WPLoose;
+}
+
+void MVAvarsBase::FillMVAvarMap(const std::vector<TLorentzVector> &selectedLeptonP4,
+				const std::vector<TLorentzVector> &selectedJetP4,
+				const std::vector<double> &selectedJetCSV,
+				const TLorentzVector &metP4)
+{
+    std::cout << "WARNING: This is the base of 'FillMVAvarMap', this should never happen!\n";
+}
+
+void MVAvarsBase::FillMVAvarMap( const std::vector<TLorentzVector> &selectedLeptonP4,
+				 const std::vector<TLorentzVector> &selectedJetP4,
+				 const std::vector<double> &selectedJetCSV,
+				 const TLorentzVector &metP4,
+				 const std::vector<int> &jets_idx)
+{
+    std::cout << "WARNING: This is the base of 'FillMVAvarMap', this should never happen!\n";
+}
+
+
+std::map<std::string, float> MVAvarsBase::GetMVAvars(const std::vector<TLorentzVector> &selectedLeptonP4,
+						     const std::vector<TLorentzVector> &selectedJetP4,
+						     const std::vector<double> &selectedJetCSV,
+						     const TLorentzVector &metP4)
+{
+    FillMVAvarMap(selectedLeptonP4, selectedJetP4, selectedJetCSV, metP4);
+    return variableMap;
+}
+
+std::map<std::string, float> MVAvarsBase::GetMVAvars(   const std::vector<TLorentzVector> &selectedLeptonP4,
+                                                        const std::vector<TLorentzVector> &selectedJetP4,
+                                                        const std::vector<double> &selectedJetCSV,
+                                                        const TLorentzVector &metP4,
+                                                        const std::vector<int> &jets_idx)
+{
+    FillMVAvarMap(selectedLeptonP4, selectedJetP4, selectedJetCSV, metP4, jets_idx);
+    return variableMap;
+}
+
+std::map<std::string, TLorentzVector> MVAvarsBase::GetVectors(  const TLorentzVector &selectedLeptonP4,
+                                                                const std::vector<TLorentzVector> &selectedJetP4,
+                                                                const TLorentzVector &metP4,
+                                                                const std::vector<int> &jets_idx)
+{
+    return std::map<std::string, TLorentzVector>();
+}
+
+bool MVAvarsBase::SkipEvent(const std::vector<TLorentzVector> &selectedJetP4,
+                            const std::vector<double> &selectedJetCSV,
+                            const std::vector<int> &jets_idx)
+{
+    std::cout << "CAREFUL - THIS IS THE BASE 'SkipEvent' FUNCTION!\n";
+    return false;
+}
+
+
+std::map<std::string, float>& MVAvarsBase::GetVariables()
+{
+    return variableMap;
+}
+
+float MVAvarsBase::GetHT(const std::vector<TLorentzVector> &selectedJetP4)
+{
+    float ht=0;
+    for(unsigned int i=0; i<selectedJetP4.size(); i++)
+	{
+	    ht += selectedJetP4[i].Pt();
+	}
+
+    return ht;
+}
+
+
+TLorentzVector MVAvarsBase::GetLeptonicW(const TLorentzVector &leptonP4, const TLorentzVector &metP4)
+{
+    TLorentzVector newMETP4;
+
+    // reconstruct leptonic W Chwalek method
+    float nu_e  = std::sqrt(metP4.Px()*metP4.Px()+metP4.Py()*metP4.Py());
+    float nu_px = metP4.Px();
+    float nu_py = metP4.Py();
+
+    float mw  = 80.43;
+
+    float mtsq= ((leptonP4.Pt()+nu_e)*(leptonP4.Pt()+nu_e) -
+		 (leptonP4.Px()+nu_px)*(leptonP4.Px()+nu_px) -
+		 (leptonP4.Py()+nu_py)*(leptonP4.Py()+nu_py));
+
+    float mt  = (mtsq>0.0) ? std::sqrt(mtsq) : 0.0;
+
+    float A, B, Csq, C, S1, S2;
+    float scf(1.0);
+
+    if (mt < mw) {
+        A = mw*mw/2.0;
+    }
+    else {
+        A = mt*mt/2.0;
+        float k = nu_e*leptonP4.Pt() - nu_px*leptonP4.Px() - nu_py*leptonP4.Py();
+        if (k <0.0001) k = 0.0001;
+        scf = 0.5*(mw*mw)/k;
+        nu_px *= scf;
+        nu_py *= scf;
+        nu_e  = sqrt(nu_px*nu_px + nu_py*nu_py);
+    }
+
+    B  = nu_px*leptonP4.Px() + nu_py*leptonP4.Py();
+    Csq= 1.0 + nu_e*nu_e*(leptonP4.Pz()*leptonP4.Pz()-leptonP4.E()*leptonP4.E())/(A+B)/(A+B);
+    C  = (Csq>0.0) ? std::sqrt(Csq) : 0.0;
+    S1 = (-(A+B)*leptonP4.Pz() + (A+B)*leptonP4.E()*C)/(leptonP4.Pz()*leptonP4.Pz()-leptonP4.E()*leptonP4.E());
+    S2 = (-(A+B)*leptonP4.Pz() - (A+B)*leptonP4.E()*C)/(leptonP4.Pz()*leptonP4.Pz()-leptonP4.E()*leptonP4.E());
+
+    float nu_pz = (std::abs(S1) < std::abs(S2)) ? S1 : S2;
+    nu_e = sqrt(metP4.Px()*metP4.Px()+metP4.Py()*metP4.Py()+nu_pz*nu_pz);
+    newMETP4.SetPxPyPzE(nu_px,nu_py,nu_pz,nu_e);
+
+
+    return leptonP4 + newMETP4;
+}

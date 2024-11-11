@@ -1,0 +1,255 @@
+#include "TTH/CommonClassifier/interface/MVAvarsJABDTtth.h"
+
+using namespace std;
+
+MVAvarsJABDTtth::MVAvarsJABDTtth()
+{
+    // ==================================================
+    //init all variables used for ttH hypothesis testing
+    Recolabels = {  "Reco_ttH_btoplep_m"
+                    ,"Reco_ttH_btoplep_pt"
+                    ,"Reco_ttH_btoplep_phi"
+                    ,"Reco_ttH_btoplep_eta"
+                    ,"Reco_ttH_btoplep_idx"
+                    ,"Reco_ttH_btoplep_w_dr"
+
+                    ,"Reco_ttH_whad_m"
+                    ,"Reco_ttH_whad_pt"
+                    ,"Reco_ttH_whad_phi"
+                    ,"Reco_ttH_whad_eta"
+                    ,"Reco_ttH_whad_dr"
+
+                    ,"Reco_ttH_whaddau_m1"
+                    ,"Reco_ttH_whaddau_pt1"
+                    ,"Reco_ttH_whaddau_phi1"
+                    ,"Reco_ttH_whaddau_eta1"
+                    ,"Reco_ttH_whaddau_idx1"
+
+                    ,"Reco_ttH_whaddau_m2"
+                    ,"Reco_ttH_whaddau_pt2"
+                    ,"Reco_ttH_whaddau_phi2"
+                    ,"Reco_ttH_whaddau_eta2"
+                    ,"Reco_ttH_whaddau_idx2"
+
+                    ,"Reco_ttH_btophad_m"
+                    ,"Reco_ttH_btophad_pt"
+                    ,"Reco_ttH_btophad_phi"
+                    ,"Reco_ttH_btophad_eta"
+                    ,"Reco_ttH_btophad_idx"
+
+                    ,"Reco_ttH_tophad_m"
+                    ,"Reco_ttH_tophad_pt"
+                    ,"Reco_ttH_tophad_phi"
+                    ,"Reco_ttH_tophad_eta"
+                    ,"Reco_ttH_tophad_dr"
+
+                    ,"Reco_ttH_toplep_m"
+                    ,"Reco_ttH_toplep_pt"
+                    ,"Reco_ttH_toplep_phi"
+                    ,"Reco_ttH_toplep_eta"
+
+                    ,"Reco_ttH_h_m"
+                    ,"Reco_ttH_h_pt"
+                    ,"Reco_ttH_h_phi"
+                    ,"Reco_ttH_h_eta"
+                    ,"Reco_ttH_h_dr"
+
+                    ,"Reco_ttH_hdau_m1"
+                    ,"Reco_ttH_hdau_pt1"
+                    ,"Reco_ttH_hdau_phi1"
+                    ,"Reco_ttH_hdau_eta1"
+                    ,"Reco_ttH_hdau_m2"
+
+                    ,"Reco_ttH_hdau_pt2"
+                    ,"Reco_ttH_hdau_phi2"
+                    ,"Reco_ttH_hdau_eta2"
+                    ,"Reco_ttH_hdau_idx1"
+                    ,"Reco_ttH_hdau_idx2"
+
+                    ,"Reco_JABDT_ttH_log_whad_m"
+                    ,"Reco_JABDT_ttH_Jet_CSV_btophad"
+                    ,"Reco_JABDT_ttH_Jet_CSV_btoplep"
+                    ,"Reco_JABDT_ttH_Jet_CSV_hdau1"
+                    ,"Reco_JABDT_ttH_Jet_CSV_hdau2"
+                    ,"Reco_JABDT_ttH_Jet_CSV_whaddau1"
+                    ,"Reco_JABDT_ttH_Jet_CSV_whaddau2"
+                    ,"Reco_JABDT_ttH_log_tophad_m__M__whad_m"
+                    ,"Reco_JABDT_ttH_log_tophad_m"
+                    ,"Reco_JABDT_ttH_log_tophad_pt"
+                    ,"Reco_JABDT_ttH_log_toplep_m"
+                    ,"Reco_JABDT_ttH_log_toplep_pt"
+                    ,"Reco_JABDT_ttH_tophad_pt__P__toplep_pt__P__h_pt__DIV__Evt_HT__P__Evt_Pt_MET__P__Lep_Pt"
+                    ,"Reco_JABDT_ttH_log_h_pt"
+                    ,"Reco_JABDT_ttH_log_h_m"
+                };
+
+    for(uint i=0; i<Recolabels.size(); i++)
+    {   
+        if ((Recolabels[i].find("eta") != string::npos) and not (Recolabels[i].find("abs") != string::npos))
+        {
+            variableMap[Recolabels[i]] = -5.;
+        }
+        else if (Recolabels[i].find("phi") != string::npos)
+        {
+            variableMap[Recolabels[i]] = -5.;
+        }
+        else
+        {
+            variableMap[Recolabels[i]] = globalDefault;
+        }
+    }
+}
+
+MVAvarsJABDTtth::~MVAvarsJABDTtth()
+{
+}
+
+void MVAvarsJABDTtth::FillMVAvarMap(    const std::vector<TLorentzVector> &selectedLeptonP4,
+                                        const std::vector<TLorentzVector> &selectedJetP4,
+                                        const std::vector<double> &selectedJetCSV,
+                                        const TLorentzVector &metP4,
+                                        const std::vector<int> &jets_idx)
+{
+    // Reset all map entries to globalDefault value so that noting is left over from the last event
+    ResetVariableMap();
+
+    // ==================================================
+    // construct object vectors etc
+    float HT = GetHT(selectedJetP4);
+    std::map<std::string, TLorentzVector> vectors = GetVectors(selectedLeptonP4[0], selectedJetP4, metP4, jets_idx);
+
+    variableMap["Reco_ttH_btoplep_idx"]   = jets_idx.at(ttHIndexes::ttH_btoplep_idx);
+    variableMap["Reco_ttH_btophad_idx"]   = jets_idx.at(ttHIndexes::ttH_btophad_idx);
+    variableMap["Reco_ttH_whaddau_idx1"]  = jets_idx.at(ttHIndexes::ttH_whaddau1_idx);
+    variableMap["Reco_ttH_whaddau_idx2"]  = jets_idx.at(ttHIndexes::ttH_whaddau2_idx);
+    variableMap["Reco_ttH_hdau_idx1"]     = jets_idx.at(ttHIndexes::ttH_hdau1_idx);
+    variableMap["Reco_ttH_hdau_idx2"]     = jets_idx.at(ttHIndexes::ttH_hdau2_idx);
+
+    variableMap["Reco_ttH_btoplep_m"]     = vectors["btoplep"].M();
+    variableMap["Reco_ttH_btoplep_pt"]    = vectors["btoplep"].Pt();
+    variableMap["Reco_ttH_btoplep_phi"]   = vectors["btoplep"].Phi();
+    variableMap["Reco_ttH_btoplep_eta"]   = vectors["btoplep"].Eta();
+    variableMap["Reco_ttH_btoplep_w_dr"]  = vectors["btoplep"].DeltaR(vectors["leptonicWP4"]);
+
+    variableMap["Reco_ttH_whad_m"]        = vectors["whad"].M();
+    variableMap["Reco_ttH_whad_pt"]       = vectors["whad"].Pt();
+    variableMap["Reco_ttH_whad_phi"]      = vectors["whad"].Phi();
+    variableMap["Reco_ttH_whad_eta"]      = vectors["whad"].Eta();
+    variableMap["Reco_ttH_whad_dr"]       = vectors["whaddau1"].DeltaR(vectors["whaddau2"]);
+
+    variableMap["Reco_ttH_whaddau_m1"]    = vectors["whaddau1"].M();
+    variableMap["Reco_ttH_whaddau_pt1"]   = vectors["whaddau1"].Pt();
+    variableMap["Reco_ttH_whaddau_phi1"]  = vectors["whaddau1"].Phi();
+    variableMap["Reco_ttH_whaddau_eta1"]  = vectors["whaddau1"].Eta();
+
+    variableMap["Reco_ttH_whaddau_m2"]    = vectors["whaddau2"].M();
+    variableMap["Reco_ttH_whaddau_pt2"]   = vectors["whaddau2"].Pt();
+    variableMap["Reco_ttH_whaddau_phi2"]  = vectors["whaddau2"].Phi();
+    variableMap["Reco_ttH_whaddau_eta2"]  = vectors["whaddau2"].Eta();
+
+    variableMap["Reco_ttH_btophad_m"]     = vectors["btophad"].M();
+    variableMap["Reco_ttH_btophad_pt"]    = vectors["btophad"].Pt();
+    variableMap["Reco_ttH_btophad_phi"]   = vectors["btophad"].Phi();
+    variableMap["Reco_ttH_btophad_eta"]   = vectors["btophad"].Eta();
+
+    variableMap["Reco_ttH_tophad_m"]      = vectors["tophad"].M();
+    variableMap["Reco_ttH_tophad_pt"]     = vectors["tophad"].Pt();
+    variableMap["Reco_ttH_tophad_phi"]    = vectors["tophad"].Phi();
+    variableMap["Reco_ttH_tophad_eta"]    = vectors["tophad"].Eta();
+    variableMap["Reco_ttH_tophad_dr"]     = vectors["whad"].DeltaR(vectors["btophad"]);
+
+    variableMap["Reco_ttH_toplep_m"]      = vectors["toplep"].M();
+    variableMap["Reco_ttH_toplep_pt"]     = vectors["toplep"].Pt();
+    variableMap["Reco_ttH_toplep_phi"]    = vectors["toplep"].Phi();
+    variableMap["Reco_ttH_toplep_eta"]    = vectors["toplep"].Eta();
+
+    variableMap["Reco_ttH_h_m"]         = vectors["higg"].M();
+    variableMap["Reco_ttH_h_pt"]        = vectors["higg"].Pt();
+    variableMap["Reco_ttH_h_phi"]       = vectors["higg"].Phi();
+    variableMap["Reco_ttH_h_eta"]       = vectors["higg"].Eta();
+    variableMap["Reco_ttH_h_dr"]        = vectors["hdau1"].DeltaR(vectors["hdau2"]);
+
+    variableMap["Reco_ttH_hdau_m1"]     = vectors["hdau1"].M();
+    variableMap["Reco_ttH_hdau_pt1"]    = vectors["hdau1"].Pt();
+    variableMap["Reco_ttH_hdau_phi1"]   = vectors["hdau1"].Phi();
+    variableMap["Reco_ttH_hdau_eta1"]   = vectors["hdau1"].Eta();
+
+    variableMap["Reco_ttH_hdau_m2"]     = vectors["hdau2"].M();
+    variableMap["Reco_ttH_hdau_pt2"]    = vectors["hdau2"].Pt();
+    variableMap["Reco_ttH_hdau_phi2"]   = vectors["hdau2"].Phi();
+    variableMap["Reco_ttH_hdau_eta2"]   = vectors["hdau2"].Eta();
+
+    // variables for JABDT
+    variableMap["Reco_JABDT_ttH_log_whad_m"]                = log(vectors["whad"].M());
+    variableMap["Reco_JABDT_ttH_Jet_CSV_btoplep"]           = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_btoplep_idx)];
+    variableMap["Reco_JABDT_ttH_Jet_CSV_btophad"]           = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_btophad_idx)];
+    variableMap["Reco_JABDT_ttH_Jet_CSV_whaddau1"]          = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_whaddau1_idx)];
+    variableMap["Reco_JABDT_ttH_Jet_CSV_whaddau2"]          = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_whaddau2_idx)];
+    variableMap["Reco_JABDT_ttH_Jet_CSV_hdau1"]             = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_hdau1_idx)];
+    variableMap["Reco_JABDT_ttH_Jet_CSV_hdau2"]             = selectedJetCSV[jets_idx.at(ttHIndexes::ttH_hdau2_idx)];
+    variableMap["Reco_JABDT_ttH_log_tophad_m__M__whad_m"]   = log(vectors["tophad"].M() - vectors["whad"].M());
+    variableMap["Reco_JABDT_ttH_log_tophad_m"]              = log(vectors["tophad"].M());
+    variableMap["Reco_JABDT_ttH_log_tophad_pt"]             = log(vectors["tophad"].Pt());
+    variableMap["Reco_JABDT_ttH_log_toplep_m"]              = log(vectors["toplep"].M());
+    variableMap["Reco_JABDT_ttH_log_toplep_pt"]             = log(vectors["toplep"].Pt());
+    variableMap["Reco_JABDT_ttH_tophad_pt__P__toplep_pt__P__h_pt__DIV__Evt_HT__P__Evt_Pt_MET__P__Lep_Pt"] = (vectors["tophad"].Pt() + vectors["toplep"].Pt() + vectors["higg"].Pt())/(HT + metP4.Pt() + selectedLeptonP4[0].Pt());
+    variableMap["Reco_JABDT_ttH_log_h_pt"]                  = log(vectors["higg"].Pt());
+    variableMap["Reco_JABDT_ttH_log_h_m"]                   = log(vectors["higg"].M());
+}
+
+std::map<std::string, TLorentzVector> MVAvarsJABDTtth::GetVectors(const TLorentzVector &selectedLeptonP4,
+                                                                    const std::vector<TLorentzVector> &selectedJetP4,
+                                                                    const TLorentzVector &metP4,
+                                                                    const std::vector<int> &jets_idx)
+{
+    std::map<std::string, TLorentzVector> vectors;
+
+    vectors["leptonicW"]    = GetLeptonicW(selectedLeptonP4, metP4);
+
+    vectors["btoplep"]      = selectedJetP4[jets_idx.at(ttHIndexes::ttH_btoplep_idx)];
+    vectors["btophad"]      = selectedJetP4[jets_idx.at(ttHIndexes::ttH_btophad_idx)];
+    vectors["whaddau1"]     = selectedJetP4[jets_idx.at(ttHIndexes::ttH_whaddau1_idx)];
+    vectors["whaddau2"]     = selectedJetP4[jets_idx.at(ttHIndexes::ttH_whaddau2_idx)];
+    vectors["hdau1"]        = selectedJetP4[jets_idx.at(ttHIndexes::ttH_hdau1_idx)];
+    vectors["hdau2"]        = selectedJetP4[jets_idx.at(ttHIndexes::ttH_hdau2_idx)];
+
+    vectors["toplep"]       = vectors["btoplep"] + vectors["leptonicW"];
+    vectors["whad"]         = vectors["whaddau1"] + vectors["whaddau2"];
+    vectors["tophad"]       = vectors["whad"] + vectors["btophad"];
+    vectors["higg"]         = vectors["hdau1"] + vectors["hdau2"];
+
+    return vectors;
+}
+
+bool MVAvarsJABDTtth::SkipEvent(const std::vector<TLorentzVector> &selectedJetP4,
+                                const std::vector<double> &selectedJetCSV,
+                                const std::vector<int> &jets_idx)
+{
+    int btoplep  = jets_idx.at(ttHIndexes::ttH_btoplep_idx);
+    int btophad  = jets_idx.at(ttHIndexes::ttH_btophad_idx);
+    int hdau1    = jets_idx.at(ttHIndexes::ttH_hdau1_idx);
+    int hdau2    = jets_idx.at(ttHIndexes::ttH_hdau2_idx);
+    int whaddau1 = jets_idx.at(ttHIndexes::ttH_whaddau1_idx);
+    int whaddau2 = jets_idx.at(ttHIndexes::ttH_whaddau2_idx);
+
+    // pt order
+    if (selectedJetP4[hdau2].Pt() > selectedJetP4[hdau1].Pt())      return true;
+    if (selectedJetP4[whaddau2].Pt() > selectedJetP4[whaddau1].Pt())return true;
+
+    if (!JetIsCentral(selectedJetP4.at(btoplep)))   return true;
+    if (!JetIsCentral(selectedJetP4.at(btophad)))   return true;
+    if (!JetIsCentral(selectedJetP4.at(hdau1)))     return true;
+    if (!JetIsCentral(selectedJetP4.at(hdau2)))     return true;
+    if (!JetIsSelected(selectedJetP4[whaddau1]))    return true;
+    if (!JetIsSelected(selectedJetP4[whaddau2]))    return true;
+
+    int btags = 0;
+    if(JetIsTagged(selectedJetP4.at(btophad), selectedJetCSV.at(btophad))) btags++;
+    if(JetIsTagged(selectedJetP4.at(btoplep), selectedJetCSV.at(btoplep))) btags++;
+    if(JetIsTagged(selectedJetP4.at(hdau1), selectedJetCSV.at(hdau1))) btags++;
+    if(JetIsTagged(selectedJetP4.at(hdau2), selectedJetCSV.at(hdau2))) btags++;
+
+    if(btags < 2) return true;
+
+    return false;
+}
