@@ -186,12 +186,12 @@ class CondorJobManager:
             f.write(f"executable              = {self.script_name}\n")
             f.write("arguments               = $(args)\n")
             f.write(f"output                  = {os.path.join(self.tmp_folder, f'job_{self.sample_name}.$(ClusterId).$(ProcId).out')}\n")
-            f.write("MY.WantOS               = \"{self.os_version}\"\n")
+            f.write(f"MY.WantOS               = \"{self.os_version}\"\n")
             f.write("MY.XRDCP_CREATE_DIR     = True\n")
             f.write(f"error                   = {os.path.join(self.tmp_folder, f'error_{self.sample_name}.$(ClusterId).$(ProcId).err')}\n")
             f.write(f"log                     = {os.path.join(self.condor_files_path, f'log_{self.sample_name}.$(ClusterId).log')}\n")
-            f.write("request_memory          = {self.memorySize}\n")
-            f.write("+JobFlavour             = \"{self.jobFlavour}\"\n")
+            f.write(f"request_memory          = {self.memorySize}\n")
+            f.write(f"+JobFlavour             = \"{self.jobFlavour}\"\n")
             f.write(f"queue args from {self.arg_list_file}\n")
 
     def create_executable_script(self):
