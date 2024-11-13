@@ -22,7 +22,7 @@ git clone https://github.com/Junghyun-Lee-Physicist/ttHHAnalyzer.git
 
 xrdcp root://eosuser.cern.ch//eos/user/j/junghyun/public/TTH.tar.gz .
 # If above line doesn't work, then download [ TTH.tar.gz ] at CERNBOX link:
-    --> https://cernbox.cern.ch/s/xPBQqigATEjgFQb
+#    --> https://cernbox.cern.ch/s/xPBQqigATEjgFQb
 
 tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz
 mv TTH ttHHAnalyzer/.
