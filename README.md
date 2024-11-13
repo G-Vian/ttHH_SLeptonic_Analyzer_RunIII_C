@@ -54,7 +54,7 @@ voms-proxy-info -file ./proxy.cert --timeleft
 ## Example Local Run
 &#9655; To run locally, use the following syntax:
 ```bash
-# ./<exe name> <file-list-path> <output name> <weight> <year> <MC or Data> <sample name>
+# ./<exe name> <path of the file list> <output name> <weight> <year> <MC or Data> <run name - just name it you want>
 ./ttHHanalyzer_trigger filelistTest/file_ttHH_0.txt test_output_ttHH_0.root 0.00000109763773 2017 MC ttHH_MC_Test
 ./ttHHanalyzer_trigger filelistTest/file_SingleMuon_C_0.txt test_output_JetHT_C_0.root 1.0 2017 Data JetHT_C_Data_Test
 ```
@@ -66,6 +66,13 @@ Based on these files, ```submit_job_FH_Trigger.py``` will split and submit jobs.
 - Before you run the ```submit_job_FH_Trigger.py```, Adjust the variables at the top of the Python script to suit your situation.
 
 &#9655; To submit condor job:
+A condor job typically requires a submit file, which sets various variables and environment configurations needed for the job, and an execution script that runs on the worker node. 
+
+We use a single Python script to check for the existence of a proxy and to generate the submit file and execution script tailored to each sample.
+
+After adjusting the user-defined variables at the top of the ```submit_job_FH_Trigger.py``` script, running the script will create a ```condor``` directory in the current location. 
+
+This directory will contain all the necessary files, and the condor job will be submitted automatically.
 ```bash
 python3 submit_job_FH_Trigger.py
 ```
