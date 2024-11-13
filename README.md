@@ -20,6 +20,7 @@ cmsrel CMSSW_10_6_28
 cd CMSSW_10_6_28/src && cmsenv
 git clone https://github.com/Junghyun-Lee-Physicist/ttHHAnalyzer.git
 
+# Before using xrood protocol, please get the proxy
 xrdcp root://eosuser.cern.ch//eos/user/j/junghyun/public/TTH.tar.gz .
 # If above line doesn't work, then download [ TTH.tar.gz ] at CERNBOX link:
 #    --> https://cernbox.cern.ch/s/xPBQqigATEjgFQb
