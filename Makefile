@@ -17,8 +17,8 @@ incdir	:= include
 libgsl  := /cvmfs/cms.cern.ch/slc7_amd64_gcc700/external/gsl/2.2.1-omkpbe2/include/
 liblhad := /cvmfs/cms.cern.ch/slc7_amd64_gcc700/external/lhapdf/6.2.1-omkpbe3/include/
 liblhadl := /cvmfs/cms.cern.ch/slc7_amd64_gcc700/external/lhapdf/6.2.1-omkpbe3/lib/
-libmem  := /afs/cern.ch/user/j/junghyun/ttHH_analysis/CMSSW_10_6_28/src/runii_tthhanalyzer/TTH/MEIntegratorStandalone/libs
-libmemc := /afs/cern.ch/user/j/junghyun/ttHH_analysis/CMSSW_10_6_28/src/runii_tthhanalyzer/TTH/MEIntegratorStandalone/libs/proclib
+libmem  := ./TTH/MEIntegratorStandalone/libs
+libmemc := ./TTH/MEIntegratorStandalone/libs/proclib
 
 
 $(shell mkdir -p tmp)
