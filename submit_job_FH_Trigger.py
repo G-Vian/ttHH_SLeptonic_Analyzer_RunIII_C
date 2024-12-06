@@ -19,8 +19,7 @@ class CondorJobManager:
         # Variables for jobs, Please check before you run this script
         self.analyzer_path = f"{script_dir}"
         self.nameofExe = "ttHHanalyzer_trigger" # Name of compiled execution file to run analyzer
-        ##self.path_output_base = "/eos/user/t/tom/<eos-storage or anywhere you want to store the outputs>"
-        self.path_output_base = "/eos/user/j/junghyun/ttHH/Test"
+        self.path_output_base = "/eos/user/t/tom/<eos-storage or anywhere you want to store the outputs>"
         self.os_version = "el7"
         self.memorySize = "10 GB"
         self.jobFlavour = "tomorrow"
