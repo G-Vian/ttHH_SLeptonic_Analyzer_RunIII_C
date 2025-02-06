@@ -18,25 +18,34 @@ Note that lxplus does not support the el7 environment directly now, so you’ll 
 cmssw-el7
 cmsrel CMSSW_10_6_28
 cd CMSSW_10_6_28/src && cmsenv
-git clone https://github.com/Junghyun-Lee-Physicist/ttHHAnalyzer.git
-
+git clone https://github.com/G-Vian/ttHH_Leptonic_Analyzer.git
 # Before using xrood protocol to copy TTH directory, please get the proxy first
 xrdcp root://eosuser.cern.ch//eos/user/j/junghyun/public/TTH.tar.gz .
 # If above line doesn't work, then download [ TTH.tar.gz ] at CERNBOX link:
 #    --> https://cernbox.cern.ch/s/xPBQqigATEjgFQb
 
+wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz
+
 tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz
-mv TTH ttHHAnalyzer/.
+mv TTH  ttHH_Leptonic_Analyzer/.
 ```
 
 ## Compilation to make execution file
 ```bash
 cmssw-el7
-cd <Path to Analyzer>/ttHHAnalyzer
+cd <Path to Analyzer>/ttHH_Leptonic_Analyzer
 cmsenv
 source setup.sh  # required for setup
 make -j4
+
+ 
+
 ```
+## All in one line (faster):
+```bash
+git clone https://github.com/G-Vian/ttHH_Leptonic_Analyzer.git && wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz && tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz && mv TTH  ttHH_Leptonic_Analyzer/. && cd ttHH_Leptonic_Analyzer && cmsenv && source setup.sh  && make -j4 
+```
+
 
 ## Creating a Proxy
 The proxy provides the necessary permissions for accessing grid jobs, Condor jobs, and samples on lxplus. If you’re a member of the **CERN CMS VO** with the required permissions, you can generate a proxy using the ```voms-proxy-init``` command.
@@ -45,6 +54,9 @@ If you specify an output file for the proxy with the ```--out``` option, set the
 ```bash
 voms-proxy-init --voms cms --valid 96:00 --out proxy.cert
 export X509_USER_PROXY=proxy.cert
+All in one line (faster):
+voms-proxy-init --voms cms --valid 96:00 --out proxy.cert && export X509_USER_PROXY=proxy.cert
+
 ```
 Currently, to submit Condor jobs, a **proxy.cert** file with valid time remaining must be present in the analyzer directory. You can check the remaining valid time with the following command:
 ```bash
@@ -57,6 +69,7 @@ voms-proxy-info -file ./proxy.cert --timeleft
 # ./<exe name> <path of the file list> <output name> <weight> <year> <MC or Data> <run name - just name it you want>
 ./ttHHanalyzer_trigger filelistTest/file_ttHH_0.txt test_output_ttHH_0.root 0.00000109763773 2017 MC ttHH_MC_Test
 ./ttHHanalyzer_trigger filelistTest/file_SingleMuon_C_0.txt test_output_JetHT_C_0.root 1.0 2017 Data JetHT_C_Data_Test
+./ttHHanalyzer_trigger filelistTest/file_TT2L2Nu.txt out_put_TT2L2Nu.root  29.3022405372 2021 MC TT2L2Nu_MC_2021
 ```
 
 ## Running with Condor
