@@ -1414,27 +1414,33 @@ void ttHHanalyzer::writeTree(){
     
 }
 
-//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------int main(int argc, char** argv){
 int main(int argc, char** argv){
     commandLine cl(argc, argv);
     vector<string> filenames = fileNames(cl.filelist);
     double weight = cl.externalweight;   // Get global weight 
 
-    // Create tree reader
+    // Converter runYear para inteiro, caso necessário
+    int year = std::stoi(cl.runYear);  
+
+    // Converter isData para string, caso necessário
+    std::string data = cl.isData ? "true" : "false"; 
+
+    std::string sample = cl.sampleName;
+
+    // Criar tree reader
     itreestream stream(filenames, "Events");
-    if ( !stream.good() ) error("can't read root input files");
+    if (!stream.good()) error("can't read root input files");
 
     eventBuffer ev(stream);
-    std::cout << " Output filename: " << cl.outputfilename << std::endl;
-    ////ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true)
-  
-    // If you want to check or modify arguments,
-    // Please check the [ src/tnm.cc ]
-    // Arguments structure --> filelist, outputDirName, weight, Year, Data or MC, sampleName
-    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, cl.runYear, cl.isData, cl.sampleName);
+    std::cout << "Output filename: " << cl.outputfilename << std::endl;
+    std::cout << "year: " << cl.runYear << std::endl;
+    std::cout << "is data: " << cl.isData << std::endl;
+    std::cout << "sample type: " << cl.sampleName << std::endl;
+
+    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, year, data, sample);
     analysis.performAnalysis();
 
     ev.close();
-    //    of.close();
     return 0;
 }
