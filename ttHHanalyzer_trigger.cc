@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include "TVector3.h"
-#include "analyzer_GSS.h"
+#include "ttHHanalyzer_trigger.h"
 #include <iostream>
 using namespace std;
  
