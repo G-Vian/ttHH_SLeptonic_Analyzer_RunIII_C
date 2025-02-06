@@ -1414,7 +1414,7 @@ void ttHHanalyzer::writeTree(){
     
 }
 
-//----------------------------------------------------------------------------int main(int argc, char** argv){
+//----------------------------------------------------------------------------
 int main(int argc, char** argv){
     commandLine cl(argc, argv);
     vector<string> filenames = fileNames(cl.filelist);
@@ -1423,8 +1423,8 @@ int main(int argc, char** argv){
     // Converter runYear para inteiro, caso necessário
     int year = std::stoi(cl.runYear);  
 
-    // Converter isData para string, caso necessário
-    std::string data = cl.isData ? "true" : "false"; 
+    // Usar diretamente a string (se já for "true" ou "false")
+    std::string data = cl.isData;  
 
     std::string sample = cl.sampleName;
 
