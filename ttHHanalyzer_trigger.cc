@@ -1419,9 +1419,6 @@ int main(int argc, char** argv){
     commandLine cl(argc, argv);
     vector<string> filenames = fileNames(cl.filelist);
     double weight = cl.externalweight;   // Get global weight 
-    int year = cl.runYear;
-    std::string data = cl.isData;
-    std::string sample = cl.sampleName;
 
     // Create tree reader
     itreestream stream(filenames, "Events");
