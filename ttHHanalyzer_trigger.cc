@@ -1426,13 +1426,13 @@ int main(int argc, char** argv){
 
     eventBuffer ev(stream);
     std::cout << " Output filename: " << cl.outputfilename << std::endl;
-    std::cout << "year: " << cl.runYear << std::endl;
-    std::cout << "is data: " << cl.isData << std::endl;
-    std::cout << "sample type: " << cl.sampleName << std::endl;
-    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, year, data, sample);
+    ////ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true)
+  
+    // If you want to check or modify arguments,
+    // Please check the [ src/tnm.cc ]
+    // Arguments structure --> filelist, outputDirName, weight, Year, Data or MC, sampleName
+    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, cl.runYear, cl.isData, cl.sampleName);
     analysis.performAnalysis();
-
-
 
     ev.close();
     //    of.close();
