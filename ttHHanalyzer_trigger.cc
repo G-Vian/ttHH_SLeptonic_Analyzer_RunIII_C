@@ -33,8 +33,7 @@ void ttHHanalyzer::performAnalysis(){
     loop(kbTag, true); */
 
 }
-void ttHHanalyzer::loop(sysName sysType, bool up){
-
+void ttHHanalyzer::loop(sysName sysType, bool up) {
     int nevents = _ev->size();
     ////int nevents = 1000;
 
@@ -50,6 +49,7 @@ void ttHHanalyzer::loop(sysName sysType, bool up){
 
     std::string checklist = "[ tnm.cc ] & [ analyzer header ] & [ main ] & [ analyzer constructor ]";
     bool exitFlag = false;
+
     if (_runYear == "nothing") {
         std::cout << "[ERROR] RunYear is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
@@ -62,8 +62,10 @@ void ttHHanalyzer::loop(sysName sysType, bool up){
         std::cout << "[ERROR] SampleName is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
     }
+
     std::cout << "--------------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
+    
     if (exitFlag) std::exit(EXIT_FAILURE);
 
     std::string analysisInfo = _runYear + ", " + _DataOrMC + ", " + _sampleName;
@@ -71,7 +73,7 @@ void ttHHanalyzer::loop(sysName sysType, bool up){
     for (int entry = 0; entry < nevents; entry++) {
         event *currentEvent = new event;
         ////std::cout << "Processed events: " << entry << std::endl;
-        _ev->read(entry);       // read an event into event buffer
+        _ev->read(entry);  // read an event into event buffer
         process(currentEvent, sysType, up);
 
         if (entry % 1000 == 0) {
@@ -81,19 +83,18 @@ void ttHHanalyzer::loop(sysName sysType, bool up){
 
         events.push_back(currentEvent);
     }
-    //    events.back()->summarize();
-}
+    // events.back()->summarize();
 
-    
     writeHistos();
     writeTree();
-    
-    for (const auto& x : cutflow){
-	std::cout << x.first  // string (key)
-		  << ':' 
-		  << x.second // string's value 
-		  << std::endl;
+
+    for (const auto &x : cutflow) {
+        std::cout << x.first  // string (key)
+                  << ": " 
+                  << x.second // string's value 
+                  << std::endl;
     } 
+
     hCutFlow->Write();
     hCutFlow_w->Write();
 }
