@@ -59,25 +59,6 @@ map<std::string, float> cut {
 
 
 
-class ttHHanalyzer {
-public:
-    enum sysName { kJES, kJER, kbTag, noSys };
-
-    ttHHanalyzer(const std::string & cl, eventBuffer * ev, float weight = 1., bool systematics = false,
-                 std::string runYear = "nothing", std::string DataOrMC = "nothing", std::string sampleName = "nothing");
-
-    void print(const std::string &msg, const std::string &color = "", const std::string &level = "info");
-
-private:
-    float _weight;
-    eventBuffer* _ev;
-    std::string _cl;
-    bool _sys;
-    outputFile* _of;
-    std::string _runYear;
-    std::string _DataOrMC;
-    std::string _sampleName;
-};
 
 
 class objectPhysics {
