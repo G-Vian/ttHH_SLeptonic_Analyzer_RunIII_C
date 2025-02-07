@@ -871,7 +871,7 @@ class ttHHanalyzer {
 	_cl = cl;
 	_sys = systematics;
 	_of = new outputFile(_cl);
-	_year= runYear;
+	_year= year;
 	_DataOrMC = DataOrMC;
 	_sampleName = sampleName;
 
@@ -916,7 +916,7 @@ class ttHHanalyzer {
     int _year;
     std::string _data;
     std::string _sample;
-    std::string _DataOrMC, _runYear, _sampleName; 
+    std::string _DataOrMC, _year, _sampleName; 
     TH1D * _hJES, * _hbJES, *_hbJetEff, *_hJetEff, *_hSysbTagM ;
     TString _pathJES = "HL_YR_JEC.root";
     TString _nameJES = "TOTAL_DIJET_AntiKt4EMTopo_YR2018";
