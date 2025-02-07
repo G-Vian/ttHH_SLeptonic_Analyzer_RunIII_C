@@ -865,13 +865,13 @@ class ttHHanalyzer {
  public:
     enum sysName { kJES, kJER, kbTag, noSys };
     ttHHanalyzer(const std::string & cl, eventBuffer * ev, float weight = 1., bool systematics = false,
- 		  std::string runYear = "nothing", std::string DataOrMC = "nothing", std::string sampleName = "nothing"){
+ 		  std::string year= "nothing", std::string DataOrMC = "nothing", std::string sampleName = "nothing"){
 	_weight = weight;
 	_ev = ev;
 	_cl = cl;
 	_sys = systematics;
 	_of = new outputFile(_cl);
-	_runYear = runYear;
+	_year= runYear;
 	_DataOrMC = DataOrMC;
 	_sampleName = sampleName;
 
