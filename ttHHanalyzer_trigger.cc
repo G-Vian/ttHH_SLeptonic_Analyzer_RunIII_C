@@ -37,15 +37,49 @@ void ttHHanalyzer::performAnalysis(){
 void ttHHanalyzer::loop(sysName sysType, bool up){
 
     int nevents = _ev->size();
+    ////int nevents = 1000;
+
+    cout<<endl;
+    print("This analyzer commented out [ \"WTF\" log ] in the header, Please check if you want!!!", "magenta", "warning");
+
+    cout<<endl;
+    print("--------------------------------------------------------------------------", "b");
+    print("Before start, Let's check the analysis information", "b");
+    print("Run Year    ----> [  " + _runYear + "  ]", "b");
+    print("Data or MC  ----> [  " + _DataOrMC + "  ]", "b");
+    print("Sample Name ----> [  " + _sampleName + "  ]", "b");
+    
+    string checklist = "[ tnm.cc ] & [ analyzer header ] & [ main ] & [ analyzer constructor ]";
+    bool exitFlag = false;
+    if(_runYear == "nothing"){
+        print("RunYear is not defined, Please check the" + checklist, "r", "error");
+        exitFlag = true;
+    }
+    if(_DataOrMC == "nothing"){
+        print("Whether Data or MC is not defined, Please check the" + checklist, "r", "error");
+        exitFlag = true;
+    }
+    if(_sampleName == "nothing"){
+        print("SampleName is not defined, Please check the" + checklist, "r", "error");
+        exitFlag = true;
+    }
+    print("--------------------------------------------------------------------------", "b");
+    cout<<endl;
+    if(exitFlag) std::exit(EXIT_FAILURE);
+
+    std::string analysisInfo = _runYear + ", " + _DataOrMC + ", " + _sampleName;
 
     for(int entry=0; entry < nevents; entry++){
 	event * currentEvent = new event;
+        ////cout << "Processed events: " << entry << endl;
 	_ev->read(entry);       // read an event into event buffer
 	process(currentEvent, sysType, up);
-	//       	if (entry % 1000 == 0){
-	//   cout << "Processed events: " << entry << endl;
-	//	currentEvent->summarize();
-	//	}
+
+	if (entry % 1000 == 0){
+            print("Processed events of " + analysisInfo + ": " + to_string(entry) ,"c");
+            currentEvent->summarize();
+        }
+
 	events.push_back(currentEvent);
     }
     //    events.back()->summarize();
