@@ -33,56 +33,56 @@ void ttHHanalyzer::performAnalysis(){
     loop(kbTag, true); */
 
 }
-
 void ttHHanalyzer::loop(sysName sysType, bool up){
 
     int nevents = _ev->size();
     ////int nevents = 1000;
 
-    cout<<endl;
-    print("This analyzer commented out [ \"WTF\" log ] in the header, Please check if you want!!!", "magenta", "warning");
+    std::cout << std::endl;
+    std::cout << "[WARNING] This analyzer commented out [ \"WTF\" log ] in the header, Please check if you want!!!" << std::endl;
 
-    cout<<endl;
-    print("--------------------------------------------------------------------------", "b");
-    print("Before start, Let's check the analysis information", "b");
-    print("Run Year    ----> [  " + _runYear + "  ]", "b");
-    print("Data or MC  ----> [  " + _DataOrMC + "  ]", "b");
-    print("Sample Name ----> [  " + _sampleName + "  ]", "b");
-    
-    string checklist = "[ tnm.cc ] & [ analyzer header ] & [ main ] & [ analyzer constructor ]";
+    std::cout << std::endl;
+    std::cout << "--------------------------------------------------------------------------" << std::endl;
+    std::cout << "Before start, Let's check the analysis information" << std::endl;
+    std::cout << "Run Year    ----> [  " << _runYear << "  ]" << std::endl;
+    std::cout << "Data or MC  ----> [  " << _DataOrMC << "  ]" << std::endl;
+    std::cout << "Sample Name ----> [  " << _sampleName << "  ]" << std::endl;
+
+    std::string checklist = "[ tnm.cc ] & [ analyzer header ] & [ main ] & [ analyzer constructor ]";
     bool exitFlag = false;
-    if(_runYear == "nothing"){
-        print("RunYear is not defined, Please check the" + checklist, "r", "error");
+    if (_runYear == "nothing") {
+        std::cout << "[ERROR] RunYear is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
     }
-    if(_DataOrMC == "nothing"){
-        print("Whether Data or MC is not defined, Please check the" + checklist, "r", "error");
+    if (_DataOrMC == "nothing") {
+        std::cout << "[ERROR] Whether Data or MC is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
     }
-    if(_sampleName == "nothing"){
-        print("SampleName is not defined, Please check the" + checklist, "r", "error");
+    if (_sampleName == "nothing") {
+        std::cout << "[ERROR] SampleName is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
     }
-    print("--------------------------------------------------------------------------", "b");
-    cout<<endl;
-    if(exitFlag) std::exit(EXIT_FAILURE);
+    std::cout << "--------------------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
+    if (exitFlag) std::exit(EXIT_FAILURE);
 
     std::string analysisInfo = _runYear + ", " + _DataOrMC + ", " + _sampleName;
 
-    for(int entry=0; entry < nevents; entry++){
-	event * currentEvent = new event;
-        ////cout << "Processed events: " << entry << endl;
-	_ev->read(entry);       // read an event into event buffer
-	process(currentEvent, sysType, up);
+    for (int entry = 0; entry < nevents; entry++) {
+        event *currentEvent = new event;
+        ////std::cout << "Processed events: " << entry << std::endl;
+        _ev->read(entry);       // read an event into event buffer
+        process(currentEvent, sysType, up);
 
-	if (entry % 1000 == 0){
-            print("Processed events of " + analysisInfo + ": " + to_string(entry) ,"c");
+        if (entry % 1000 == 0) {
+            std::cout << "[INFO] Processed events of " << analysisInfo << ": " << entry << std::endl;
             currentEvent->summarize();
         }
 
-	events.push_back(currentEvent);
+        events.push_back(currentEvent);
     }
     //    events.back()->summarize();
+}
 
     
     writeHistos();
