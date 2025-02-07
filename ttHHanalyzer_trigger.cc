@@ -43,15 +43,15 @@ void ttHHanalyzer::loop(sysName sysType, bool up) {
     std::cout << std::endl;
     std::cout << "--------------------------------------------------------------------------" << std::endl;
     std::cout << "Before start, Let's check the analysis information" << std::endl;
-    std::cout << "Run Year    ----> [  " << _runYear << "  ]" << std::endl;
+    std::cout << "Run Year    ----> [  " << _year << "  ]" << std::endl;
     std::cout << "Data or MC  ----> [  " << _DataOrMC << "  ]" << std::endl;
     std::cout << "Sample Name ----> [  " << _sampleName << "  ]" << std::endl;
 
     std::string checklist = "[ tnm.cc ] & [ analyzer header ] & [ main ] & [ analyzer constructor ]";
     bool exitFlag = false;
 
-    if (_runYear == "nothing") {
-        std::cout << "[ERROR] RunYear is not defined, Please check the " << checklist << std::endl;
+    if (_year == "nothing") {
+        std::cout << "[ERROR] year is not defined, Please check the " << checklist << std::endl;
         exitFlag = true;
     }
     if (_DataOrMC == "nothing") {
@@ -68,7 +68,7 @@ void ttHHanalyzer::loop(sysName sysType, bool up) {
     
     if (exitFlag) std::exit(EXIT_FAILURE);
 
-    std::string analysisInfo = _runYear + ", " + _DataOrMC + ", " + _sampleName;
+    std::string analysisInfo = _year + ", " + _DataOrMC + ", " + _sampleName;
 
     for (int entry = 0; entry < nevents; entry++) {
         event *currentEvent = new event;
@@ -1455,8 +1455,8 @@ int main(int argc, char** argv){
     vector<string> filenames = fileNames(cl.filelist);
     double weight = cl.externalweight;   // Get global weight 
 
-    // Converter runYear para inteiro, caso necessário
-    int year = std::stoi(cl.runYear);  
+    // Converter year para inteiro, caso necessário
+    int year = std::stoi(cl.year);  
 
     // Usar diretamente a string (se já for "true" ou "false")
     std::string data = cl.isData;  
@@ -1469,7 +1469,7 @@ int main(int argc, char** argv){
 
     eventBuffer ev(stream);
     std::cout << "Output filename: " << cl.outputfilename << std::endl;
-    std::cout << "year: " << cl.runYear << std::endl;
+    std::cout << "year: " << cl.year << std::endl;
     std::cout << "is data: " << cl.isData << std::endl;
     std::cout << "sample type: " << cl.sampleName << std::endl;
 
