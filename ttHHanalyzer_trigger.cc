@@ -105,7 +105,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 
 
     if(_year == 2017){
-	if(_data == "true"){
+	if(_DataOrMC == "Data"){
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
 				 _ev->Flag_HBHENoiseFilter ||
@@ -140,7 +140,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 		//_ev->HLT_IsoMu24_eta2p1 ||
 		//_ev->HLT_IsoMu27);
 	    }
-	} else if(_data == "false"){ 
+	} else if(_DataOrMC == "MC"){ 
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
 				 _ev->Flag_HBHENoiseFilter ||
@@ -164,7 +164,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 				  _ev->HLT_IsoMu27);
 	}
     }  else if(_year == 2018){
-	if(_data == "true"){
+	if(_DataOrMC == "Data"){
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
 				 _ev->Flag_HBHENoiseFilter ||
@@ -198,7 +198,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
                                       _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
 				      _ev->HLT_IsoMu24);
 	    }
-	} else if(_data == "false"){
+	} else if(_DataOrMC == "MC"){
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
 				 _ev->Flag_HBHENoiseFilter ||
