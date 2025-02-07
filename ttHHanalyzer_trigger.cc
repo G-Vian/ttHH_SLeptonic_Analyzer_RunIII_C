@@ -1473,7 +1473,7 @@ int main(int argc, char** argv){
     std::cout << "is data: " << cl.isData << std::endl;
     std::cout << "sample type: " << cl.sampleName << std::endl;
 
-    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, year, data, sample);
+    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, std::to_string(year), data, sample);
     analysis.performAnalysis();
 
     ev.close();
