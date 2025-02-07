@@ -860,15 +860,17 @@ class event{
 class ttHHanalyzer {
  public:
     enum sysName { kJES, kJER, kbTag, noSys };
-    ttHHanalyzer(const std::string & cl, eventBuffer * ev, float weight = 1., bool systematics = false, float year = 2017, std::string data = "", std::string sample = ""){
+    ttHHanalyzer(const std::string & cl, eventBuffer * ev, float weight = 1., bool systematics = false,
+ 		  std::string runYear = "nothing", std::string DataOrMC = "nothing", std::string sampleName = "nothing"){
 	_weight = weight;
 	_ev = ev;
 	_cl = cl;
 	_sys = systematics;
 	_of = new outputFile(_cl);
-	_year = year;
-	_data = data;
-	_sample = sample;
+	_runYear = runYear;
+	_DataOrMC = DataOrMC;
+	_sampleName = sampleName;
+
 	initHistograms();	
 	initTree();
 	initSys();
@@ -910,6 +912,7 @@ class ttHHanalyzer {
     int _year;
     std::string _data;
     std::string _sample;
+    std::string _DataOrMC, _runYear, _sampleName; 
     TH1D * _hJES, * _hbJES, *_hbJetEff, *_hJetEff, *_hSysbTagM ;
     TString _pathJES = "HL_YR_JEC.root";
     TString _nameJES = "TOTAL_DIJET_AntiKt4EMTopo_YR2018";
