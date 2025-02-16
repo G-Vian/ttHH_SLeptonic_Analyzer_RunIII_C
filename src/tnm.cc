@@ -200,10 +200,10 @@ commandLine::decode(int argc, char** argv)
  // 4th (optional) command line argument - Gamze
   if ( argc > 4 )
       //      runYear = std::atof(argv[4]);
-      runYear = std::string(argv[4]);
+      year = std::string(argv[4]);
   else
       //runYear = 2017;
-      runYear = std::string("nothing");
+      year = std::string("nothing");
 
  // 5th (optional) command line argument - Gamze
   if ( argc > 5 )
