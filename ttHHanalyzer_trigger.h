@@ -102,7 +102,7 @@ class objectPhysics {
  private:
     TLorentzVector _p4;
     float _pxOffset = 0., _pyOffset = 0., _pzOffset = 0., _EOffset = 0.;
-    std::string _year;
+    int _year;
 };
 
 
