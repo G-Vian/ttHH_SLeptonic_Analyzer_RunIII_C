@@ -918,8 +918,8 @@ class ttHHanalyzer {
     bool _sys;
     float _weight;
 //    int _year;
-    std::string _data;
-    std::string _sample;
+//    std::string _data;
+//    std::string _sample;
     std::string _DataOrMC, _year, _sampleName; 
     TH1D * _hJES, * _hbJES, *_hbJetEff, *_hJetEff, *_hSysbTagM ;
     TString _pathJES = "HL_YR_JEC.root";
