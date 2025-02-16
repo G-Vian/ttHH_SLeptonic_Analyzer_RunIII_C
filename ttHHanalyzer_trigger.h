@@ -102,7 +102,6 @@ class objectPhysics {
  private:
     TLorentzVector _p4;
     float _pxOffset = 0., _pyOffset = 0., _pzOffset = 0., _EOffset = 0.;
-    _year = year;
     std::string _year;
 };
 
@@ -166,7 +165,7 @@ float getValbTagLoose(const std::string& year) {
     // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
     return -1.0f;  // Exemplo de retorno para caso não encontre o ano
 }
-
+};
 
 class objectMET:public objectPhysics {
  public:
