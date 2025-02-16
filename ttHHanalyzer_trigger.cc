@@ -1451,15 +1451,7 @@ void ttHHanalyzer::writeTree(){
 //changed from here
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
-struct commandLine {
-    std::string filelist;
-    std::string outputfilename;
-    bool isData;
-    std::string sampleName;
-    double externalweight;
-    std::string year; 
 
-};
 
 
 int main(int argc, char** argv){
