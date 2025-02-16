@@ -64,7 +64,7 @@ map<std::string, float> cut {
 class objectPhysics {
  public:
     enum lFlavor{kNA, kEle, kMuon};
-    explicit objectPhysics(const float pT, const float eta, const float phi, const float mass = 0, int year=2017){
+    explicit objectPhysics(const float pT, const float eta, const float phi, const float mass = 0, std::string year = "2017"){
 	_p4.SetPtEtaPhiM(pT, eta, phi, mass);
 	_year = year;
     }
@@ -102,7 +102,7 @@ class objectPhysics {
  private:
     TLorentzVector _p4;
     float _pxOffset = 0., _pyOffset = 0., _pzOffset = 0., _EOffset = 0.;
-    int _year;
+  //  int _year;
 };
 
 
@@ -136,32 +136,36 @@ class objectJet:public objectPhysics {
     float valbTagMedium;
     float valbTagLoose;
     
-    float getValbTagTight(int year){
-	if(year == 2017){
-	    return valbTagTight2017;
-	} else if (year == 2018){
-	    return valbTagTight2018;
-	}
+float getValbTagTight(const std::string& year) {
+    if (year == "2017") {
+        return valbTagTight2017;
+    } else if (year == "2018") {
+        return valbTagTight2018;
     }
-    
-    float getValbTagMedium(int year){
-	if(year == 2017){
-	    return valbTagMedium2017;
-	} else if (year == 2018){ 
-	    return valbTagMedium2018;
-	}
+    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
+    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+}
+
+float getValbTagMedium(const std::string& year) {
+    if (year == "2017") {
+        return valbTagMedium2017;
+    } else if (year == "2018") {
+        return valbTagMedium2018;
     }
-    
-    float getValbTagLoose(int year){
-	if(year == 2017){
-	    return valbTagLoose2017;
-	} else if (year == 2018){
-	    return valbTagLoose2018;
-	}
+    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
+    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+}
+
+float getValbTagLoose(const std::string& year) {
+    if (year == "2017") {
+        return valbTagLoose2017;
+    } else if (year == "2018") {
+        return valbTagLoose2018;
     }
-    
-    
-};
+    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
+    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+}
+
 
 class objectMET:public objectPhysics {
  public:
@@ -998,7 +1002,14 @@ class ttHHanalyzer {
 	}
         return lepP4;
     }
-    
+
+struct commandLine {
+    std::string year;      
+    std::string isData;   
+    std::string sampleName; 
+    std::string outputfilename; 
+};
+
 
     /*    float getBTagValue(event *thisevent, int jetNo){
 	float bTagValue;
