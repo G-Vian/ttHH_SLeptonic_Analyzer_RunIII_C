@@ -134,7 +134,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8)); //||
 					   //_ev->HLT_IsoMu24_eta2p1 || 
 					   //_ev->HLT_IsoMu27));
-	    } else if(_sample == "mumu"){
+	    } else if(_sampleName == "mumu"){
 		thisEvent->setTrigger(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ ||
                                       _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8); // ||
 		//_ev->HLT_IsoMu24_eta2p1 ||
@@ -174,14 +174,14 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 				 _ev->Flag_eeBadScFilter ||
 				 _ev->Flag_eeBadScFilter ||
 				 _ev->Flag_ecalBadCalibFilter);
-	    if(_sample == "ee"){
+	    if(_sampleName == "ee"){
 		thisEvent->setTrigger((_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
 				       _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
 				       _ev->HLT_Ele32_WPTight_Gsf)
 				      && !(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
 					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8  ||
 					   _ev->HLT_IsoMu24));
-	    } else if(_sample == "emu"){ 
+	    } else if(_sampleName == "emu"){ 
 		thisEvent->setTrigger((_ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
 				       _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
 				       _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
@@ -193,7 +193,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
 					   _ev->HLT_IsoMu24)); 
 					  
-	    } else if(_sample == "mumu"){
+	    } else if(_sampleName == "mumu"){
 		thisEvent->setTrigger(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
                                       _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
 				      _ev->HLT_IsoMu24);
