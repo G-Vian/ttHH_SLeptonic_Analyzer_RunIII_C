@@ -104,7 +104,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
     _ev->fillObjects();
 
 
-    if(_year == 2017){
+    if(_year == "2017"){
 	if(_DataOrMC == "Data"){
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
@@ -163,7 +163,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 				  _ev->HLT_IsoMu24_eta2p1 ||
 				  _ev->HLT_IsoMu27);
 	}
-    }  else if(_year == 2018){
+    }  else if(_year == "2018"){
 	if(_DataOrMC == "Data"){
 	    thisEvent->setFilter(_ev->Flag_goodVertices ||
 				 _ev->Flag_globalSuperTightHalo2016Filter ||
@@ -1448,34 +1448,29 @@ void ttHHanalyzer::writeTree(){
     //    _inputTree->Delete();
     
 }
-
+//changed from here
+//----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 int main(int argc, char** argv){
     commandLine cl(argc, argv);
     vector<string> filenames = fileNames(cl.filelist);
     double weight = cl.externalweight;   // Get global weight 
-
-    // Converter year para inteiro, caso necessário
-    int year = std::stoi(cl.year);  
-
-    // Usar diretamente a string (se já for "true" ou "false")
-    std::string data = cl.isData;  
-
-    std::string sample = cl.sampleName;
-
-    // Criar tree reader
+ 
+    // Create tree reader
     itreestream stream(filenames, "Events");
-    if (!stream.good()) error("can't read root input files");
+    if ( !stream.good() ) error("can't read root input files");
 
     eventBuffer ev(stream);
-    std::cout << "Output filename: " << cl.outputfilename << std::endl;
-    std::cout << "year: " << cl.year << std::endl;
-    std::cout << "is data: " << cl.isData << std::endl;
-    std::cout << "sample type: " << cl.sampleName << std::endl;
-
-    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, std::to_string(year), data, sample);
+    std::cout << " Output filename: " << cl.outputfilename << std::endl;
+    ////ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true)
+  
+    // If you want to check or modify arguments,
+    // Please check the [ src/tnm.cc ]
+    // Arguments structure --> filelist, outputDirName, weight, Year, Data or MC, sampleName
+    ttHHanalyzer analysis(cl.outputfilename, &ev, weight, true, cl.year, cl.isData, cl.sampleName);
     analysis.performAnalysis();
 
     ev.close();
+    //    of.close();
     return 0;
 }
