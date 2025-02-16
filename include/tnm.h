@@ -56,7 +56,7 @@ struct commandLine
     std::string filelist;
     std::string outputfilename;
     double externalweight; //Gamze
-    std::string runYear; //Gamze  
+    std::string year; //Gamze  
     //    int runYear; //Gamze  
     std::string isData; //Gamze
     std::string sampleName; //Gamze
