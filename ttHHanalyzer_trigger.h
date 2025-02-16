@@ -95,8 +95,8 @@ class objectPhysics {
 	_p4.SetPxPyPzE(_p4.Px()+offset[0],_p4.Py()+offset[1],_p4.Pz()+offset[2], _p4.E()+offset[3]);
     }
 
-    void setYear(const int year){
-	_year = year;
+//    void setYear(const int year){
+//	_year = year;
     }
 
  private:
@@ -913,7 +913,7 @@ class ttHHanalyzer {
  private: 
     bool _sys;
     float _weight;
-    int _year;
+//    int _year;
     std::string _data;
     std::string _sample;
     std::string _DataOrMC, _year, _sampleName; 
