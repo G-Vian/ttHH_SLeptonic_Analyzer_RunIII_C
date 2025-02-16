@@ -913,6 +913,15 @@ class ttHHanalyzer {
     fifo_map<std::string,int> cutflow_w{{"noCut", 0}, {"njets>3", 0}, {"nbjets>2", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}};
 
     //    std::unordered_map<std::string, int> cutflow {{"noCut", 0}, {"njets>3", 0}, {"nbjets>2", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}};
+struct commandLine {
+    std::string year;      // Adiciona o membro 'year' como std::string
+    std::string isData;    // Outro membro existente
+    std::string sampleName; // Outro membro existente
+    std::string outputfilename; // Outro membro existente
+    // Outros membros que você já usa em 'commandLine'
+
+    // Construtor e outros métodos, conforme necessário
+};
 
  private: 
     bool _sys;
