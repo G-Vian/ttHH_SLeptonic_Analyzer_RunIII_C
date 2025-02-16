@@ -1003,13 +1003,6 @@ class ttHHanalyzer {
         return lepP4;
     }
 
-struct commandLine {
-    std::string year;      
-    std::string isData;   
-    std::string sampleName; 
-    std::string outputfilename; 
-};
-
 
     /*    float getBTagValue(event *thisevent, int jetNo){
 	float bTagValue;
