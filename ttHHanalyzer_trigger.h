@@ -30,23 +30,24 @@ const float cZMass = 91.;
 
 
 map<std::string, float> cut { 
-    {"nJets", 3} // nJets higher than 
-    , {"nLeptons", 2} // nLepton equals to
+    {"nJets", 4} // nJets higher than 
+    , {"nLeptons", 1} // nLepton equals to (Single-Leptonic)
     //    , {"nVetoLeptons", 0} // nVetoLepton equals to
-    , {"MET", 40} // MET higher than
-    , {"nbJets", 2} //nBjets higher than
+    , {"HT", 0}
+    , {"MET", 20} // MET higher than
+    , {"nbJets", 3} //nBjets higher than
     , {"jetPt", 30} // jet pT higher than
-    , {"leadElePt", 25} // leadElectron pT higher than
-    , {"leadMuonPt", 25} // leadMuon pT higher than
+    , {"leadElePt", 30} // leadElectron pT higher than
+    , {"leadMuonPt", 29} // leadMuon pT higher than
     , {"subLeadElePt", 15} // subLeadElectron pT higher than
     , {"subLeadMuonPt", 15} // subLeadMuon pT higher than
     // , {"vetoLepPt", 15} // lepton pT higher than
     , {"boostedJetPt", 10} // boostedJet pT higher than
     , {"hadHiggsPt", 20} // hadronic Higgs pT higher than
-    , {"jetEta", 2.4} // jet eta higher than
-    , {"eleEta", 2.4} // electron eta higher than
-    , {"muonEta", 2.4} // muon eta higher than
-    , {"boostedJetEta", 2.4} // boostedJet eta higher than
+    , {"jetEta", 2.5} // jet eta higher than
+    , {"eleEta", 2.5} // electron eta higher than
+    , {"muonEta", 2.5} // muon eta higher than
+    , {"boostedJetEta", 2.5} // boostedJet eta higher than
     , {"muonIso", 0.25} // muon isolation less than
     , {"eleIso", 0.06}  // ele isolation less than
     , {"jetID", 6}   // pass tight and tightLepVeto ID
