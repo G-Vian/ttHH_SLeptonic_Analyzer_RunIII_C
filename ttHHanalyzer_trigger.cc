@@ -441,35 +441,38 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	return false;
     }
     
-    cutflow["njets>3"]+=1;
-    hCutFlow->Fill("njets>3",1);
-    hCutFlow_w->Fill("njets>3",_weight);
+    cutflow["njets>4"]+=1;
+    hCutFlow->Fill("njets>4",1);
+    hCutFlow_w->Fill("njets>4",_weight);
     
 	
     if(!(thisEvent->getnbJet() > cut["nbJets"])){
 	return false;
     }
     
-    cutflow["nbjets>2"]+=1;
-    hCutFlow->Fill("nbjets>2",1);
-    hCutFlow_w->Fill("nbjets>2",_weight);
+    cutflow["nbjets>3"]+=1;
+    hCutFlow->Fill("nbjets>3",1);
+    hCutFlow_w->Fill("nbjets>3",_weight);
     
     
     if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
 	return false;
     }
     
-    cutflow["nlepton==2"]+=1;
-    hCutFlow->Fill("nlepton==2",1);
-    hCutFlow_w->Fill("nlepton==2",_weight);
+    cutflow["nlepton==1"]+=1;
+    hCutFlow->Fill("nlepton==1",1);
+    hCutFlow_w->Fill("nlepton==1",_weight);
 	
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
     thisEvent->getStatsComb(thisEvent->getSelbJets(), thisEvent->getSelLeptons(), lbjetStat);
     
     
-    if(thisEvent->getSelLeptons()->at(0)->charge == thisEvent->getSelLeptons()->at(1)->charge){
-    	return false;
+if (thisEvent->getSelLeptons()->size() == 2) {
+    if (thisEvent->getSelLeptons()->at(0)->charge == thisEvent->getSelLeptons()->at(1)->charge) {
+        return false;
     }
+}
+
 
     cutflow["nOpositeChargedLep"]+=1;
     hCutFlow->Fill("nOpositeChargedLep",1);
