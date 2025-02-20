@@ -31,7 +31,7 @@ const float cZMass = 91.;
 
 map<std::string, float> cut { 
     {"nJets", 4} // nJets higher than 
-    , {"nLeptons", 1} // nLepton equals to (Single-Leptonic)
+    , {"nLeptons", 2} // nLepton equals to (Single-Leptonic)
     //    , {"nVetoLeptons", 0} // nVetoLepton equals to
     , {"HT", 0}
     , {"MET", 20} // MET higher than
