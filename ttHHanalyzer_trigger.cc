@@ -469,7 +469,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     
     if (thisEvent->getSelLeptons()->size() == 2) {
         if (thisEvent->getSelLeptons()->at(0)->charge == thisEvent->getSelLeptons()->at(1)->charge) {
-        return false;
+            return false;
          }
      }
 
