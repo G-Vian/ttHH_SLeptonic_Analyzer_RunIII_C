@@ -62,12 +62,11 @@ map<std::string, float> cut {
 
 
 
-class objectPhysics {
- public:
-    enum lFlavor{kNA, kEle, kMuon};
-    explicit objectPhysics(const float pT, const float eta, const float phi, const float mass = 0, std::string year = "2017"){
-	_p4.SetPtEtaPhiM(pT, eta, phi, mass);
-	_year = year;
+class objectPhysics { 
+ public: 
+    enum lFlavor{kNA, kEle, kMuon}; 
+    explicit objectPhysics(const float pT, const float eta, const float phi, const float mass = 0){ 
+	_p4.SetPtEtaPhiM(pT, eta, phi, mass); 
     }
     
     TLorentzVector * getp4(){
