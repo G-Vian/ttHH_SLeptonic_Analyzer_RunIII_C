@@ -43,7 +43,7 @@ make -j4
 ```
 ## All in one line (faster):
 ```bash
-git clone https://github.com/G-Vian/ttHH_Leptonic_Analyzer.git && wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz && tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz && mv TTH  ttHH_Leptonic_Analyzer/. && cd ttHH_Leptonic_Analyzer && cmsenv && source setup.sh  && make -j4 
+cmssw-el7 && git clone https://github.com/G-Vian/ttHH_Leptonic_Analyzer.git && wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz && tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz && mv TTH  ttHH_Leptonic_Analyzer/. && cd ttHH_Leptonic_Analyzer && cmsenv && source setup.sh  && make -j4 
 ```
 
 
@@ -54,7 +54,10 @@ If you specify an output file for the proxy with the ```--out``` option, set the
 ```bash
 voms-proxy-init --voms cms --valid 96:00 --out proxy.cert
 export X509_USER_PROXY=proxy.cert
-All in one line (faster):
+```
+## All in one line (faster):
+```bash
+
 voms-proxy-init --voms cms --valid 96:00 --out proxy.cert && export X509_USER_PROXY=proxy.cert
 
 ```
