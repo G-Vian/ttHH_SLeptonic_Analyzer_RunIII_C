@@ -915,7 +915,8 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     }
 
     hleptonNumber->Fill(thisEvent->getnSelLepton(),_weight*thisEvent->getbTagSys());
-
+    hElecNumber->Fill(thisEvent->getnSelElectron(),_weight*thisEvent->getbTagSys());
+    hMuonNumber->Fill(thisEvent->getnSelMuon(),_weight*thisEvent->getbTagSys());
 
     if(thisEvent->getnSelMuon() == 2){
 	hDiMuonMass->Fill(thisEvent->getSelMuonsMass(),_weight*thisEvent->getbTagSys());
@@ -1090,6 +1091,8 @@ void ttHHanalyzer::writeHistos(){
     hLepCharge2->Write();
 
     hleptonNumber->Write();
+    hElecNumber->Write();
+    hMuonNumber->Write();
     hDiMuonMass->Write();
     hDiElectronMass->Write();
     hDiMuonPT->Write();
