@@ -501,11 +501,11 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow_w->Fill("nMassCut",_weight);
     
         
-    if(thisEvent->getnSelMuon()  == cut["nLeptons"] || thisEvent->getnSelElectron()  == cut["nLeptons"]){	
+    /*if(thisEvent->getnSelMuon()  == cut["nLeptons"] || thisEvent->getnSelElectron()  == cut["nLeptons"]){	
     	if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
     	    return false;
     	}
-    }
+    }*/
     if (thisEvent->getMET()->getp4()->Pt() > cut["MET"]) {  
         return false;
     }
