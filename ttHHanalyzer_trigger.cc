@@ -459,9 +459,9 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	return false;
     }
     
-    cutflow["nlepton==1"]+=1;
-    hCutFlow->Fill("nlepton==1",1);
-    hCutFlow_w->Fill("nlepton==1",_weight);
+    cutflow["nlepton==2]+=1;
+    hCutFlow->Fill("nlepton==2",1);
+    hCutFlow_w->Fill("nlepton==2",_weight);
 	
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
     thisEvent->getStatsComb(thisEvent->getSelbJets(), thisEvent->getSelLeptons(), lbjetStat);
@@ -506,8 +506,11 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     	    return false;
     	}
     }
-	
-    cutflow["MET>40"]+=1; 
+    if (thisEvent->getMET()->getp4()->Pt() > cut["MET"]) {  
+        return false;
+    }
+
+    cutflow["MET>20"]+=1; 
 
     cutflow["nTotal"]+=1;
     hCutFlow->Fill("nTotal",1);
@@ -1193,8 +1196,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	jetBTagDisc8 = -6;
     }
 
-
-    /*    if(thisEvent->getnbJet() > 2){
+    if(thisEvent->getnbJet() > 2){
 	bjetPT3 = thisEvent->getSelbJets()->at(2)->getp4()->Pt();
 	bjetEta3 = thisEvent->getSelbJets()->at(2)->getp4()->Eta();
 	bjetBTagDisc3 = getbJetCSV(thisEvent).at(2);
@@ -1208,7 +1210,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	bbjetHiggsMatched3 = 0;
 	bbjetHiggsMatcheddR3 = -6;
 	bbjetMinChiHiggsIndex3 = -6;
-	} */
+	} 
 
 
     if(thisEvent->getnbJet() > 3){
