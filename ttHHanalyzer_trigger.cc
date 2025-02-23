@@ -459,7 +459,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	return false;
     }
     
-    cutflow["nlepton==2]+=1;
+    cutflow["nlepton==2"]+=1;
     hCutFlow->Fill("nlepton==2",1);
     hCutFlow_w->Fill("nlepton==2",_weight);
 	
