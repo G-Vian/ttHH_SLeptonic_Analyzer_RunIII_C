@@ -506,43 +506,42 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     	    return false;
     	}
     }*/
-    if ( thisEvent->getSelLeptons()->size() == 2 ) { 
-    
-        if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kEle ) { 
-        
-            if ( thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] )  
-                return false;
-        
-            if ( fabs( thisEvent->getSelElectrons()->at(0)->getp4()->Eta() ) > cut["eleEta"] )  
-                return false;
-    
-        } else if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kMuon ) { 
-        
-            if ( thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] )  
-                return false;
-        
-            if ( fabs( thisEvent->getSelMuons()->at(0)->getp4()->Eta() ) > cut["muonEta"] )  
-                return false;
-    }
-
-        if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kEle ) { 
-        
-            if ( thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] )  
-                return false;
-        
-            if ( fabs( thisEvent->getSelElectrons()->at(1)->getp4()->Eta() ) > cut["eleEta"] )  
-                return false;
-    
-        } else if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kMuon ) { 
-        
-            if ( thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] )  
-                return false;
-        
-            if ( fabs( thisEvent->getSelMuons()->at(1)->getp4()->Eta() ) > cut["muonEta"] )  
-                return false;
-    }
-}
-
+	if ( thisEvent->getSelLeptons()->size() == 2 ) { 
+	    
+	    if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kEle && thisEvent->getSelElectrons()->size() > 0 ) { 
+	        
+	        if ( thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelElectrons()->at(0)->getp4()->Eta() ) > cut["eleEta"] )  
+	            return false;
+	    
+	    } else if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kMuon && thisEvent->getSelMuons()->size() > 0 ) { 
+	        
+	        if ( thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelMuons()->at(0)->getp4()->Eta() ) > cut["muonEta"] )  
+	            return false;
+	    }
+	
+	    if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kEle && thisEvent->getSelElectrons()->size() > 1 ) { 
+	        
+	        if ( thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelElectrons()->at(1)->getp4()->Eta() ) > cut["eleEta"] )  
+	            return false;
+	    
+	    } else if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kMuon && thisEvent->getSelMuons()->size() > 1 ) { 
+	        
+	        if ( thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelMuons()->at(1)->getp4()->Eta() ) > cut["muonEta"] )  
+	            return false;
+	    }
+	}
 
 //////////////////////////////	
     if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
