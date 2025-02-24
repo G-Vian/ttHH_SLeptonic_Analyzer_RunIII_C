@@ -507,43 +507,43 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     	}
     }*/
 	
-////////////////////////////////////
 // Verifica se o evento contém exatamente 2 léptons selecionados
-    if (thisEvent->getnSelLepton() == 2) {
-        auto leptons = thisEvent->getSelLeptons(); // Obtém a lista de léptons selecionados
+	if (thisEvent->getnSelLepton() == 2) {
+	    auto leptons = thisEvent->getSelLeptons(); // Obtém a lista de léptons selecionados
+	
+	    // Ordena os léptons por pT decrescente
+	    std::sort(leptons->begin(), leptons->end(), 
+	              [](const auto* l1, const auto* l2) { return l1->getp4()->Pt() > l2->getp4()->Pt(); });
+	
+	    const auto* leadLepton = leptons->at(0);   // Lépton mais energético
+	    const auto* subLeadLepton = leptons->at(1); // Segundo lépton mais energético
+	
+	    // Verifica os cortes de ETA
+	    if ((leadLepton->flavor == objectLep::kEle && fabs(thisEvent->getSelElectronsEta()->at(0)) > cut["eleEta"]) ||
+	        (subLeadLepton->flavor == objectLep::kEle && fabs(thisEvent->getSelElectronsEta()->at(1)) > cut["eleEta"])) {
+	        return false;
+	    }
+	    
+	    if ((leadLepton->flavor == objectLep::kMuon && fabs(leadLepton->getp4()->Eta()) > cut["muonEta"]) ||
+	        (subLeadLepton->flavor == objectLep::kMuon && fabs(subLeadLepton->getp4()->Eta()) > cut["muonEta"])) {
+	        return false;
+	    }
+	
+	    // Verifica os cortes de pT para elétrons e múons
+	    if (leadLepton->flavor == objectLep::kEle && leadLepton->getp4()->Pt() < cut["leadElePt"]) {
+	        return false;
+	    }
+	    if (subLeadLepton->flavor == objectLep::kEle && subLeadLepton->getp4()->Pt() < cut["subLeadElePt"]) {
+	        return false;
+	    }
+	    if (leadLepton->flavor == objectLep::kMuon && leadLepton->getp4()->Pt() < cut["leadMuonPt"]) {
+	        return false;
+	    }
+	    if (subLeadLepton->flavor == objectLep::kMuon && subLeadLepton->getp4()->Pt() < cut["subLeadMuonPt"]) {
+	        return false;
+	    }
+	}
 
-    // Ordena os léptons por pT decrescente
-        std::sort(leptons->begin(), leptons->end(), 
-                  [](const auto* l1, const auto* l2) { return l1->pt > l2->pt; });
-
-        const auto* leadLepton = leptons->at(0);   // Lépton mais energético
-        const auto* subLeadLepton = leptons->at(1); // Segundo lépton mais energético
-
-    // Verifica os cortes de ETA
-        if ((leadLepton->flavor == objectLep::kEle && fabs(thisEvent->getSelElectronsEta()->at(0)) > cut["eleEta"]) ||
-            (subLeadLepton->flavor == objectLep::kEle && fabs(thisEvent->getSelElectronsEta()->at(1)) > cut["eleEta"])) {
-            return false;
-    }
-    
-        if ((leadLepton->flavor == objectLep::kMuon && fabs(leadLepton->eta) > cut["muonEta"]) ||
-            (subLeadLepton->flavor == objectLep::kMuon && fabs(subLeadLepton->eta) > cut["muonEta"])) {
-            return false;
-    }
-
-    // Verifica os cortes de pT para elétrons e múons
-        if (leadLepton->flavor == objectLep::kEle && thisEvent->getSelElectronsPT()->at(0) < cut["leadElePt"]) {
-            return false;
-    }
-        if (subLeadLepton->flavor == objectLep::kEle && thisEvent->getSelElectronsPT()->at(1) < cut["subLeadElePt"]) {
-            return false;
-    }
-        if (leadLepton->flavor == objectLep::kMuon && thisEvent->getSelMuonsPT()->at(0) < cut["leadMuonPt"]) {
-            return false;
-    }
-        if (subLeadLepton->flavor == objectLep::kMuon && thisEvent->getSelMuonsPT()->at(1) < cut["subLeadMuonPt"]) {
-            return false;
-    }
-}
 //////////////////////////////	
     if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
         return false;
