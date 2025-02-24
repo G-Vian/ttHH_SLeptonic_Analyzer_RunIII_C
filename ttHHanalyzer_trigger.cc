@@ -508,31 +508,53 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     }*/
 	
 // Verifica se o evento contém exatamente 2 léptons selecionados
-	auto leptons = thisEvent->getSelLeptons();
-	if (leptons->size() == 2) { 
-	    auto leadLepton = leptons->at(0);
-	    auto subLeadLepton = leptons->at(1);
-	
-	    // Aplicando os cortes de pseudorapidez (eta)
-	    if (fabs(leadLepton->getp4()->Eta()) > cut["muonEta"] && leadLepton->flavor == objectLep::kMuon)
-	        return false;
-	    if (fabs(leadLepton->getp4()->Eta()) > cut["eleEta"] && leadLepton->flavor == objectLep::kEle)
-	        return false;
-	    if (fabs(subLeadLepton->getp4()->Eta()) > cut["muonEta"] && subLeadLepton->flavor == objectLep::kMuon)
-	        return false;
-	    if (fabs(subLeadLepton->getp4()->Eta()) > cut["eleEta"] && subLeadLepton->flavor == objectLep::kEle)
-	        return false;
-	
-	    // Aplicando os cortes de pT
-	    if (leadLepton->flavor == objectLep::kEle && leadLepton->getp4()->Pt() < cut["leadElePt"])
-	        return false;
-	    if (subLeadLepton->flavor == objectLep::kEle && subLeadLepton->getp4()->Pt() < cut["subLeadElePt"])
-	        return false;
-	    if (leadLepton->flavor == objectLep::kMuon && leadLepton->getp4()->Pt() < cut["leadMuonPt"])
-	        return false;
-	    if (subLeadLepton->flavor == objectLep::kMuon && subLeadLepton->getp4()->Pt() < cut["subLeadMuonPt"])
-	        return false;
-	}
+    if ( thisEvent->getSelLeptons()->size() == 2 ) { 
+    
+    // Check the leading lepton
+        if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kEle ) { 
+        
+        // Apply pT cut
+            if ( thisEvent->getSelLeptons()->at(0)->getp4()->Pt() < cut["leadElePt"] )  
+                return false;
+        
+        // Apply eta cut
+            if ( fabs( thisEvent->getSelLeptons()->at(0)->getp4()->Eta() ) > cut["eleEta"] )  
+                return false;
+    
+        } else if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kMuon ) { 
+        
+        // Apply pT cut
+            if ( thisEvent->getSelLeptons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] )  
+                return false;
+        
+        // Apply eta cut
+            if ( fabs( thisEvent->getSelLeptons()->at(0)->getp4()->Eta() ) > cut["muonEta"] )  
+                return false;
+    }
+
+    // Check the subleading lepton
+        if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kEle ) { 
+        
+        // Apply pT cut
+            if ( thisEvent->getSelLeptons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] )  
+                return false;
+        
+        // Apply eta cut
+            if ( fabs( thisEvent->getSelLeptons()->at(1)->getp4()->Eta() ) > cut["eleEta"] )  
+                return false;
+    
+        } else if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kMuon ) { 
+        
+        // Apply pT cut
+            if ( thisEvent->getSelLeptons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] )  
+                return false;
+        
+        // Apply eta cut
+            if ( fabs( thisEvent->getSelLeptons()->at(1)->getp4()->Eta() ) > cut["muonEta"] )  
+                return false;
+    }
+}
+
 
 
 //////////////////////////////	
