@@ -507,73 +507,42 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     	}
     }*/
 	
-    if ( thisEvent->getSelLeptons()->size() == 2 ) { 
-    
-        std::cout << "Lead Lepton pT: " << thisEvent->getSelLeptons()->at(0)->getp4()->Pt() << std::endl;
-        std::cout << "SubLead Lepton pT: " << thisEvent->getSelLeptons()->at(1)->getp4()->Pt() << std::endl;
-
-    // Check the leading lepton
-        if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kEle ) { 
-        
-            std::cout << "Lead Electron pT cut: " << cut["leadElePt"] << std::endl;
-
-        // Apply pT cut
-            if ( thisEvent->getSelLeptons()->at(0)->getp4()->Pt() < cut["leadElePt"] ) {  
-                std::cout << "Event rejected: Lead electron pT too low!" << std::endl;
-                return false;
-        }
-        
-        // Apply eta cut
-            if ( fabs( thisEvent->getSelLeptons()->at(0)->getp4()->Eta() ) > cut["eleEta"] )  
-                return false;
-    
-        } else if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kMuon ) { 
-        
-            std::cout << "Lead Muon pT cut: " << cut["leadMuonPt"] << std::endl;
-
-        // Apply pT cut
-            if ( thisEvent->getSelLeptons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] ) {  
-                std::cout << "Event rejected: Lead muon pT too low!" << std::endl;
-                return false;
-        }
-        
-        // Apply eta cut
-            if ( fabs( thisEvent->getSelLeptons()->at(0)->getp4()->Eta() ) > cut["muonEta"] )  
-                return false;
-    }
-
-    // Check the subleading lepton
-        if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kEle ) { 
-        
-            std::cout << "SubLead Electron pT cut: " << cut["subLeadElePt"] << std::endl;
-
-        // Apply pT cut
-            if ( thisEvent->getSelLeptons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] ) {  
-                std::cout << "Event rejected: Sublead electron pT too low!" << std::endl;
-                return false;
-        }
-        
-        // Apply eta cut
-            if ( fabs( thisEvent->getSelLeptons()->at(1)->getp4()->Eta() ) > cut["eleEta"] )  
-                return false;
-    
-        } else if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kMuon ) { 
-        
-            std::cout << "SubLead Muon pT cut: " << cut["subLeadMuonPt"] << std::endl;
-
-        // Apply pT cut
-            if ( thisEvent->getSelLeptons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] ) {  
-                std::cout << "Event rejected: Sublead muon pT too low!" << std::endl;
-                return false;
-        }
-        
-        // Apply eta cut
-            if ( fabs( thisEvent->getSelLeptons()->at(1)->getp4()->Eta() ) > cut["muonEta"] )  
-                return false;
-    }
-}
-
-
+	if ( thisEvent->getSelLeptons()->size() == 2 ) { 
+	    
+	    if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kEle ) { 
+	        
+	        if ( thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelElectrons()->at(0)->getp4()->Eta() ) > cut["eleEta"] )  
+	            return false;
+	    
+	    } else if ( thisEvent->getSelLeptons()->at(0)->flavor == objectLep::kMuon ) { 
+	        
+	        if ( thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelMuons()->at(0)->getp4()->Eta() ) > cut["muonEta"] )  
+	            return false;
+	    }
+	
+	    if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kEle ) { 
+	        
+	        if ( thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelElectrons()->at(1)->getp4()->Eta() ) > cut["eleEta"] )  
+	            return false;
+	    
+	    } else if ( thisEvent->getSelLeptons()->at(1)->flavor == objectLep::kMuon ) { 
+	        
+	        if ( thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] )  
+	            return false;
+	        
+	        if ( fabs( thisEvent->getSelMuons()->at(1)->getp4()->Eta() ) > cut["muonEta"] )  
+	            return false;
+	    }
+	}
 
 
 //////////////////////////////	
