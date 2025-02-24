@@ -311,7 +311,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 	}
     }
     thisEvent->orderLeptons();
-
+//Here it applies the CUT on the PT and ETA of the Jets, and the jets that are accepted are classified as b or light-quark jets
     float dR = 0., deltaEta = 0., deltaPhi = 0.;
     for(int i=0; i < jet.size(); i++){
        	currentJet = new objectJet(jet[i].pt, jet[i].eta, jet[i].phi, jet[i].mass);
@@ -437,7 +437,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow->Fill("nPV",1);
     hCutFlow_w->Fill("nPV",_weight);
 
-    if(!(thisEvent->getnSelJet()  > cut["nJets"] )){
+    if(!(thisEvent->getnSelJet()  >=  cut["nJets"] )){
 	return false;
     }
     
@@ -446,7 +446,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow_w->Fill("njets>4",_weight);
     
 	
-    if(!(thisEvent->getnbJet() > cut["nbJets"])){
+    if(!(thisEvent->getnbJet() >=  cut["nbJets"])){
 	return false;
     }
     
@@ -501,13 +501,52 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow_w->Fill("nMassCut",_weight);
     
         
-    if(thisEvent->getnSelMuon()  == cut["nLeptons"] || thisEvent->getnSelElectron()  == cut["nLeptons"]){	
+/*    if(thisEvent->getnSelMuon()  == cut["nLeptons"] || thisEvent->getnSelElectron()  == cut["nLeptons"]){	
     	if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
     	    return false;
     	}
-    }
-  
+    }*/
+	
+////////////////////////////////////
+	// Verifica se o evento contém exatamente 2 léptons selecionados
+    if (thisEvent->getnSelLepton() == 2) {
+    	auto leptons = thisEvent->getSelLeptons(); // Obtém a lista de léptons selecionados
 
+	    // Ordena os léptons por pT decrescente
+	    std::sort(leptons->begin(), leptons->end(), 
+	              [](const auto* l1, const auto* l2) { return l1->pt > l2->pt; });
+	
+	    const auto* leadLepton = leptons->at(0);   // Lépton mais energético
+	    const auto* subLeadLepton = leptons->at(1); // Segundo lépton mais energético
+	
+	    // Verifica o corte de eta para ambos os léptons
+	    if ((fabs(leadLepton->eta) > cut["eleEta"] && leadLepton->isElectron()) || 
+	        (fabs(leadLepton->eta) > cut["muonEta"] && leadLepton->isMuon()) ||
+	        (fabs(subLeadLepton->eta) > cut["eleEta"] && subLeadLepton->isElectron()) || 
+	        (fabs(subLeadLepton->eta) > cut["muonEta"] && subLeadLepton->isMuon())) {
+	        return false;
+	    }
+	
+	    // Verifica os cortes de pT para elétrons e múons
+	    if (leadLepton->isElectron() && leadLepton->pt < cut["leadElePt"]) {
+	        return false;
+	    }
+	    if (subLeadLepton->isElectron() && subLeadLepton->pt < cut["subLeadElePt"]) {
+	        return false;
+	    }
+	    if (leadLepton->isMuon() && leadLepton->pt < cut["leadMuonPt"]) {
+	        return false;
+	    }
+	    if (subLeadLepton->isMuon() && subLeadLepton->pt < cut["subLeadMuonPt"]) {
+	        return false;
+	    }
+	}
+
+//////////////////////////////	
+    if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
+        return false;
+    	}
+/////////////////////////////
     cutflow["MET>20"]+=1; 
 
     cutflow["nTotal"]+=1;
