@@ -405,7 +405,6 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 
 
 bool ttHHanalyzer::selectObjects(event *thisEvent){
-
     //    std::cout << "bjet CSV: " << thisEvent->getSelbJets()->at(0)->bTagCSV << std::endl;
 	
     cutflow["noCut"]+=1;
@@ -441,42 +440,42 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	return false;
     }
     
-    cutflow["njets>4"]+=1;
-    hCutFlow->Fill("njets>4",1);
-    hCutFlow_w->Fill("njets>4",_weight);
+    cutflow["njets>5"]+=1;
+    hCutFlow->Fill("njets>5",1);
+    hCutFlow_w->Fill("njets>5",_weight);
     
 	
     if(!(thisEvent->getnbJet() >=  cut["nbJets"])){
 	return false;
     }
     
-    cutflow["nbjets>3"]+=1;
-    hCutFlow->Fill("nbjets>3",1);
-    hCutFlow_w->Fill("nbjets>3",_weight);
+    cutflow["nbjets>4"]+=1;
+    hCutFlow->Fill("nbjets>4",1);
+    hCutFlow_w->Fill("nbjets>4",_weight);
     
     
     if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
 	return false;
     }
     
-    cutflow["nlepton==2"]+=1;
-    hCutFlow->Fill("nlepton==2",1);
-    hCutFlow_w->Fill("nlepton==2",_weight);
+    cutflow["nlepton==1"]+=1;
+    hCutFlow->Fill("nlepton==1",1);
+    hCutFlow_w->Fill("nlepton==1",_weight);
 	
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
     thisEvent->getStatsComb(thisEvent->getSelbJets(), thisEvent->getSelLeptons(), lbjetStat);
     
     
-    if (thisEvent->getSelLeptons()->size() == 2) {
+/*    if (thisEvent->getSelLeptons()->size() == 2) {
         if (thisEvent->getSelLeptons()->at(0)->charge == thisEvent->getSelLeptons()->at(1)->charge) {
             return false;
          }
-     }
+     }*/
 
 
-    cutflow["nOpositeChargedLep"]+=1;
-    hCutFlow->Fill("nOpositeChargedLep",1);
-    hCutFlow_w->Fill("nOpositeChargedLep",_weight);
+//    cutflow["nOpositeChargedLep"]+=1;
+//    hCutFlow->Fill("nOpositeChargedLep",1);
+//    hCutFlow_w->Fill("nOpositeChargedLep",_weight);
 
 
     //    if(!(thisEvent->getnVetoLepton()  == cut["nVetoLeptons"])){
@@ -484,7 +483,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     // }
 
     
-    if(thisEvent->getnSelMuon()  == cut["nLeptons"]){
+   /* if(thisEvent->getnSelMuon()  == cut["nLeptons"]){
     	if(!((thisEvent->getSelMuonsMass() > 20) && (thisEvent->getSelMuonsMass() < 76 || thisEvent->getSelMuonsMass() > 106))){
 	    return false;
 	}
@@ -499,6 +498,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["nMassCut"]+=1;
     hCutFlow->Fill("nMassCut",1);
     hCutFlow_w->Fill("nMassCut",_weight);
+    /*
     
         
 /*    if(thisEvent->getnSelMuon()  == cut["nLeptons"] || thisEvent->getnSelElectron()  == cut["nLeptons"]){	
@@ -508,25 +508,28 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     }*/
 
 // Check if there are exactly two electrons and no muons
-if (thisEvent->getSelElectrons()->size() == 2 && thisEvent->getSelMuons()->size() == 0) {
+if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
     // Case 1: Two electrons, no muons
     if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] ||
-        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) > cut["eleEta"] ||
-        thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] ||
-        fabs(thisEvent->getSelElectrons()->at(1)->getp4()->Eta()) > cut["eleEta"]) {
+        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) > cut["eleEta"] || )
+     //   thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] ||
+     //   fabs(thisEvent->getSelElectrons()->at(1)->getp4()->Eta()) > cut["eleEta"]) 
+    {
         return false;
-    }
+  }
 } 
 // Check if there are exactly two muons and no electrons
-else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 2) {
+else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 1) {
     // Case 2: Two muons, no electrons
     if (thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] ||
-        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) > cut["muonEta"] ||
-        thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] ||
-        fabs(thisEvent->getSelMuons()->at(1)->getp4()->Eta()) > cut["muonEta"]) {
+        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) > cut["muonEta"] ||)
+     //   thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] ||
+     //   fabs(thisEvent->getSelMuons()->at(1)->getp4()->Eta()) > cut["muonEta"]) 
+    {
         return false;
     }
 } 
+/*	
 // Check if there is one electron and one muon
 else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 1) {
     // Case 3: One electron and one muon
@@ -548,7 +551,7 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
         }
     }
 }
-
+*/
 	
 //////////////////////////////	
     if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
