@@ -406,7 +406,6 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 
 bool ttHHanalyzer::selectObjects(event *thisEvent){
     //    std::cout << "bjet CSV: " << thisEvent->getSelbJets()->at(0)->bTagCSV << std::endl;
-std::cout << "Hello, World!" << std::endl;
 	
     cutflow["noCut"]+=1;
     hCutFlow->Fill("noCut",1);
@@ -454,7 +453,6 @@ std::cout << "Hello, World!" << std::endl;
     hCutFlow->Fill("nbjets>4",1);
     hCutFlow_w->Fill("nbjets>4",_weight);
   
-	std::cout << "Hello, World2!" << std::endl;
 
     
     if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
@@ -468,7 +466,6 @@ std::cout << "Hello, World!" << std::endl;
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
     thisEvent->getStatsComb(thisEvent->getSelbJets(), thisEvent->getSelLeptons(), lbjetStat);
  
-	std::cout << "Hello, World3!" << std::endl;
 
     
 /*    if (thisEvent->getSelLeptons()->size() == 2) {
@@ -512,7 +509,6 @@ std::cout << "Hello, World!" << std::endl;
     	}
     }*/
 
-std::cout << "Hello, World4!" << std::endl;
 
 // Check if there are exactly two electrons and no muons
 if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
@@ -534,7 +530,6 @@ else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->
     }
 } 
 
-	std::cout << "Hello, World5!" << std::endl;
 
 /*	
 // Check if there is one electron and one muon
@@ -559,7 +554,6 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
     }
 }
 */
-		std::cout << "Hello, World6!" << std::endl;
 
 //////////////////////////////	
     if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
@@ -578,7 +572,6 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
 		  << std::endl;
 		  } */
 	
-   std::cout << "Hello, World7!" << std::endl;
 
     return true;
 }
@@ -818,7 +811,6 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hCutFlow->SetBinContent(i, x.second);
 	i++;
     }
-       std::cout << "Hello, World8!" << std::endl;
 
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelbJets(), jbjetCent);
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelLeptons(), jlepCent);
@@ -834,7 +826,6 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     thisEvent->getFoxWolfram(thisEvent->getSelJets(), jetFoxWolfMom);
     thisEvent->getFoxWolfram(thisEvent->getSelbJets(), bjetFoxWolfMom);
  
-	std::cout << "Hello, World9!" << std::endl;
 
     //    std::cout << "Number of Hadronic Higgs: " << thisEvent->getnHadronicHiggs() << std::endl;
 
@@ -857,7 +848,6 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hHadronicHiggsSoftDropMass2->Fill(thisEvent->getSelHadronicHiggses()->at(1)->softDropMass,_weight*thisEvent->getbTagSys());
     }
 
-   std::cout << "Hello, World10!" << std::endl;
 
     hjetHT->Fill(thisEvent->getSumSelJetScalarpT(),_weight*thisEvent->getbTagSys());
     hBjetHT->Fill(thisEvent->getSumSelbJetScalarpT(),_weight*thisEvent->getbTagSys());
@@ -929,7 +919,6 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hDvalue->Fill(thisEvent->eventShapeJet->getD(), _weight*thisEvent->getbTagSys());
     hCentralityjb->Fill(jbjetCent.centrality, _weight*thisEvent->getbTagSys());    
     hCentralityjl->Fill(jlepCent.centrality, _weight*thisEvent->getbTagSys());    
-   std::cout << "Hello, World11!" << std::endl;
 
     hH0->Fill(jetFoxWolfMom.h0, _weight*thisEvent->getbTagSys());
     hH1->Fill(jetFoxWolfMom.h1, _weight*thisEvent->getbTagSys());
@@ -982,7 +971,6 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hleptonNumber->Fill(thisEvent->getnSelLepton(),_weight*thisEvent->getbTagSys());
     hElecNumber->Fill(thisEvent->getnSelElectron(),_weight*thisEvent->getbTagSys());
     hMuonNumber->Fill(thisEvent->getnSelMuon(),_weight*thisEvent->getbTagSys());
-   std::cout << "Hello, World12!" << std::endl;
 
     if(thisEvent->getnSelMuon() == 2){
 	hDiMuonMass->Fill(thisEvent->getSelMuonsMass(),_weight*thisEvent->getbTagSys());
