@@ -909,8 +909,8 @@ class ttHHanalyzer {
 
     //fifo_map<std::string,int> cutflow{{"noCut", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"MET>40", 0}};
     //fifo_map<std::string,float> cutflow_w{{"noCut", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"MET>40", 0}};
-    fifo_map<std::string,int> cutflow{{"noCut", 0}, {"nTrigger", 0}, {"jetPt>30", 0}, {"nFilter", 0}, {"nPV", 0}, {"njets>4", 0}, {"nbjets>3", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}, {"MET>20", 0}};
-    fifo_map<std::string,int> cutflow_w{{"noCut", 0}, {"jetPt>30", 0},{"njets>4", 0}, {"nbjets>4", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}, {"MET>20", 0}};
+    fifo_map<std::string,int> cutflow{{"noCut", 0}, {"nTrigger", 0}, {"jetPt>30", 0}, {"nFilter", 0}, {"nPV", 0}, {"njets>5", 0}, {"nbjets>4", 0}, {"nlepton==1", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}, {"MET>20", 0}};
+    fifo_map<std::string,int> cutflow_w{{"noCut", 0}, {"jetPt>30", 0},{"njets>5", 0}, {"nbjets>4", 0}, {"nlepton==1", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}, {"MET>20", 0}};
 
     //    std::unordered_map<std::string, int> cutflow {{"noCut", 0}, {"njets>3", 0}, {"nbjets>2", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"nTotal", 0}};
 
