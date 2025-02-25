@@ -402,6 +402,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
     }
 }
 
+std::cout << "Hello, World!" << std::endl;
 
 
 bool ttHHanalyzer::selectObjects(event *thisEvent){
@@ -452,7 +453,9 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["nbjets>4"]+=1;
     hCutFlow->Fill("nbjets>4",1);
     hCutFlow_w->Fill("nbjets>4",_weight);
-    
+  
+	std::cout << "Hello, World2!" << std::endl;
+
     
     if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
 	return false;
@@ -464,7 +467,9 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
     thisEvent->getStatsComb(thisEvent->getSelbJets(), thisEvent->getSelLeptons(), lbjetStat);
-    
+ 
+	std::cout << "Hello, World3!" << std::endl;
+
     
 /*    if (thisEvent->getSelLeptons()->size() == 2) {
         if (thisEvent->getSelLeptons()->at(0)->charge == thisEvent->getSelLeptons()->at(1)->charge) {
@@ -517,6 +522,8 @@ if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size(
         return false;
   }
 } 
+std::cout << "Hello, World4" << std::endl;
+
 // Check if there are exactly two muons and no electrons
 else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 1) {
     // Case 2: Two muons, no electrons
@@ -528,6 +535,9 @@ else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->
         return false;
     }
 } 
+
+	std::cout << "Hello, World5!" << std::endl;
+
 /*	
 // Check if there is one electron and one muon
 else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 1) {
