@@ -509,7 +509,6 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 
 // Check if there are exactly two electrons and no muons
 if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
-    // Case 1: Two electrons, no muons
     if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] ||
         fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) > cut["eleEta"] )
      //   thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] ||
@@ -984,9 +983,9 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hleptonHT->Fill(thisEvent->getSelLeptonHT(),_weight*thisEvent->getbTagSys());
     hST->Fill(thisEvent->getSelLeptonST(),_weight*thisEvent->getbTagSys());
     hLeptonPT1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
-    hLeptonEta1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
+   // hLeptonEta1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
     hLeptonPT2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
-    hLeptonEta2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
+  //  hLeptonEta2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
 
 
     if(thisEvent->getnSelMuon() > 0){
@@ -1010,7 +1009,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     } 
 
     hLepCharge1->Fill(thisEvent->getSelLeptons()->at(0)->charge, _weight*thisEvent->getbTagSys());
-    hLepCharge2->Fill(thisEvent->getSelLeptons()->at(1)->charge, _weight*thisEvent->getbTagSys());
+//    hLepCharge2->Fill(thisEvent->getSelLeptons()->at(1)->charge, _weight*thisEvent->getbTagSys());
     
 }
 
@@ -1448,11 +1447,11 @@ void ttHHanalyzer::fillTree(event * thisEvent){
     bdValue = thisEvent->eventShapeBjet->getD();
 
     leptonPT1 = thisEvent->getSelLeptons()->at(0)->getp4()->Pt();
-    leptonPT2 = thisEvent->getSelLeptons()->at(1)->getp4()->Pt();
+  //  leptonPT2 = thisEvent->getSelLeptons()->at(1)->getp4()->Pt();
     leptonEta1 = thisEvent->getSelLeptons()->at(0)->getp4()->Eta();
-    leptonEta2 = thisEvent->getSelLeptons()->at(1)->getp4()->Eta();
+    //leptonEta2 = thisEvent->getSelLeptons()->at(1)->getp4()->Eta();
     leptonCharge1 = thisEvent->getSelLeptons()->at(0)->charge;
-    leptonCharge2 = thisEvent->getSelLeptons()->at(1)->charge;
+  //  leptonCharge2 = thisEvent->getSelLeptons()->at(1)->charge;
     leptonHT = thisEvent->getSelLeptonHT();
     ST = thisEvent->getSelLeptonST();
 
