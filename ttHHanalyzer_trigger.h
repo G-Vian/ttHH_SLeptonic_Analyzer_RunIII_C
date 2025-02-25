@@ -30,15 +30,15 @@ const float cZMass = 91.;
 
 
 map<std::string, float> cut { 
-    {"nJets", 4} // nJets higher than 
-    , {"nLeptons", 2} // nLepton equals to (Single-Leptonic)
+    {"nJets", 5} // nJets higher than 
+    , {"nLeptons", 1} // nLepton equals to (Single-Leptonic)
     //    , {"nVetoLeptons", 0} // nVetoLepton equals to
     , {"HT", 0}
-    , {"MET", 40} // MET higher than
-    , {"nbJets", 3} //nBjets higher than
+    , {"MET", 20} // MET higher than
+    , {"nbJets", 4} //nBjets higher than
     , {"jetPt", 30} // jet pT higher than
-    , {"leadElePt", 25} // leadElectron pT higher than
-    , {"leadMuonPt", 25} // leadMuon pT higher than
+    , {"leadElePt", 30} // leadElectron pT higher than
+    , {"leadMuonPt", 29} // leadMuon pT higher than
     , {"subLeadElePt", 15} // subLeadElectron pT higher than
     , {"subLeadMuonPt", 15} // subLeadMuon pT higher than
     // , {"vetoLepPt", 15} // lepton pT higher than
