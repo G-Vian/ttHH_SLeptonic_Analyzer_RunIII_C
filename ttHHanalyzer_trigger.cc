@@ -511,7 +511,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
     // Case 1: Two electrons, no muons
     if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] ||
-        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) > cut["eleEta"] || )
+        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) > cut["eleEta"] )
      //   thisEvent->getSelElectrons()->at(1)->getp4()->Pt() < cut["subLeadElePt"] ||
      //   fabs(thisEvent->getSelElectrons()->at(1)->getp4()->Eta()) > cut["eleEta"]) 
     {
@@ -522,7 +522,7 @@ if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size(
 else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 1) {
     // Case 2: Two muons, no electrons
     if (thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] ||
-        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) > cut["muonEta"] ||)
+        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) > cut["muonEta"] )
      //   thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] ||
      //   fabs(thisEvent->getSelMuons()->at(1)->getp4()->Eta()) > cut["muonEta"]) 
     {
