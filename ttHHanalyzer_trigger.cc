@@ -512,6 +512,7 @@ std::cout << "Hello, World!" << std::endl;
     	}
     }*/
 
+std::cout << "Hello, World4!" << std::endl;
 
 // Check if there are exactly two electrons and no muons
 if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
@@ -558,7 +559,8 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
     }
 }
 */
-	
+		std::cout << "Hello, World6!" << std::endl;
+
 //////////////////////////////	
     if(!(thisEvent->getMET()->getp4()->Pt() > cut["MET"] )){
         return false;
@@ -576,7 +578,8 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
 		  << std::endl;
 		  } */
 	
-   
+   std::cout << "Hello, World7!" << std::endl;
+
     return true;
 }
 
@@ -815,7 +818,8 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hCutFlow->SetBinContent(i, x.second);
 	i++;
     }
-    
+       std::cout << "Hello, World8!" << std::endl;
+
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelbJets(), jbjetCent);
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelLeptons(), jlepCent);
     thisEvent->getStats(thisEvent->getSelJets(), jetStat);
@@ -829,6 +833,8 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     
     thisEvent->getFoxWolfram(thisEvent->getSelJets(), jetFoxWolfMom);
     thisEvent->getFoxWolfram(thisEvent->getSelbJets(), bjetFoxWolfMom);
+ 
+	std::cout << "Hello, World9!" << std::endl;
 
     //    std::cout << "Number of Hadronic Higgs: " << thisEvent->getnHadronicHiggs() << std::endl;
 
@@ -851,6 +857,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hHadronicHiggsSoftDropMass2->Fill(thisEvent->getSelHadronicHiggses()->at(1)->softDropMass,_weight*thisEvent->getbTagSys());
     }
 
+   std::cout << "Hello, World10!" << std::endl;
 
     hjetHT->Fill(thisEvent->getSumSelJetScalarpT(),_weight*thisEvent->getbTagSys());
     hBjetHT->Fill(thisEvent->getSumSelbJetScalarpT(),_weight*thisEvent->getbTagSys());
@@ -922,6 +929,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hDvalue->Fill(thisEvent->eventShapeJet->getD(), _weight*thisEvent->getbTagSys());
     hCentralityjb->Fill(jbjetCent.centrality, _weight*thisEvent->getbTagSys());    
     hCentralityjl->Fill(jlepCent.centrality, _weight*thisEvent->getbTagSys());    
+   std::cout << "Hello, World11!" << std::endl;
 
     hH0->Fill(jetFoxWolfMom.h0, _weight*thisEvent->getbTagSys());
     hH1->Fill(jetFoxWolfMom.h1, _weight*thisEvent->getbTagSys());
@@ -974,6 +982,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hleptonNumber->Fill(thisEvent->getnSelLepton(),_weight*thisEvent->getbTagSys());
     hElecNumber->Fill(thisEvent->getnSelElectron(),_weight*thisEvent->getbTagSys());
     hMuonNumber->Fill(thisEvent->getnSelMuon(),_weight*thisEvent->getbTagSys());
+   std::cout << "Hello, World12!" << std::endl;
 
     if(thisEvent->getnSelMuon() == 2){
 	hDiMuonMass->Fill(thisEvent->getSelMuonsMass(),_weight*thisEvent->getbTagSys());
@@ -990,8 +999,8 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hleptonHT->Fill(thisEvent->getSelLeptonHT(),_weight*thisEvent->getbTagSys());
     hST->Fill(thisEvent->getSelLeptonST(),_weight*thisEvent->getbTagSys());
     hLeptonPT1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
-   // hLeptonEta1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
-    hLeptonPT2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
+    hLeptonEta1->Fill(thisEvent->getSelLeptons()->at(0)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
+   // hLeptonPT2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
   //  hLeptonEta2->Fill(thisEvent->getSelLeptons()->at(1)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
 
 
@@ -1145,13 +1154,13 @@ void ttHHanalyzer::writeHistos(){
     _histoDirs.at(1)->cd();
     
     hLepCharge1->Write();
-    hLepCharge2->Write();
+  //  hLepCharge2->Write();
 
     hleptonNumber->Write();
     hElecNumber->Write();
     hMuonNumber->Write();
-    hDiMuonMass->Write();
-    hDiElectronMass->Write();
+   // hDiMuonMass->Write();
+   // hDiElectronMass->Write();
     hDiMuonPT->Write();
     hDiElectronPT->Write();
     hDiMuonEta->Write();
@@ -1160,17 +1169,17 @@ void ttHHanalyzer::writeHistos(){
     hST->Write();
     hLeptonEta1->Write();
     hLeptonPT1->Write();
-    hLeptonEta2->Write();
-    hLeptonPT2->Write();
+ //   hLeptonEta2->Write();
+ //   hLeptonPT2->Write();
     
     hMuonEta1->Write();
     hMuonPT1->Write();
     hEleEta1->Write();
     hElePT1->Write();
-    hMuonEta2->Write();
-    hMuonPT2->Write();
-    hEleEta2->Write();
-    hElePT2->Write(); 
+//    hMuonEta2->Write();
+//    hMuonPT2->Write();
+//    hEleEta2->Write();
+//    hElePT2->Write(); 
 }
 void ttHHanalyzer::fillTree(event * thisEvent){
 
