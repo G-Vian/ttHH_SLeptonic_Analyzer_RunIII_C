@@ -402,11 +402,11 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
     }
 }
 
-std::cout << "Hello, World!" << std::endl;
 
 
 bool ttHHanalyzer::selectObjects(event *thisEvent){
     //    std::cout << "bjet CSV: " << thisEvent->getSelbJets()->at(0)->bTagCSV << std::endl;
+std::cout << "Hello, World!" << std::endl;
 	
     cutflow["noCut"]+=1;
     hCutFlow->Fill("noCut",1);
@@ -512,6 +512,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     	}
     }*/
 
+
 // Check if there are exactly two electrons and no muons
 if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
     if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() < cut["leadElePt"] ||
@@ -522,11 +523,7 @@ if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size(
         return false;
   }
 } 
-std::cout << "Hello, World4" << std::endl;
-
-// Check if there are exactly two muons and no electrons
 else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 1) {
-    // Case 2: Two muons, no electrons
     if (thisEvent->getSelMuons()->at(0)->getp4()->Pt() < cut["leadMuonPt"] ||
         fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) > cut["muonEta"] )
      //   thisEvent->getSelMuons()->at(1)->getp4()->Pt() < cut["subLeadMuonPt"] ||
