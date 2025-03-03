@@ -71,7 +71,7 @@ voms-proxy-info -file ./proxy.cert --timeleft
 &#9655; To run locally, use the following syntax:
 ```bash
 # ./<exe name> <path of the file list> <output name> <weight> <year> <MC or Data> <run name - just name it you want>
-./ttHHanalyzer_trigger filelistTest/file_ttHH_0.txt test_output_ttHH_0.root 0.00000109763773 2017 MC ttHH_MC_Test
+./ttHHanalyzer_trigger filelistTest/file_ttHH_0.txt test_output_ttHH_0.root 0.0000337 2017 MC ttHH_MC_Test
 ./ttHHanalyzer_trigger filelistTest/file_SingleMuon_C_0.txt test_output_JetHT_C_0.root 1.0 2017 Data JetHT_C_Data_Test
 ./ttHHanalyzer_trigger filelistTest/file_TT2L2Nu.txt out_put_TT2L2Nu.root  29.3022405372 2021 MC TT2L2Nu_MC_2021
 ```
