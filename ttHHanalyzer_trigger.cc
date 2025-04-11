@@ -511,7 +511,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 
 
 	if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->size() == 0) {
-	    // Case 1: Two electrons, no muons
+	    // Case 1: one electron, no muons
 	    if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() >= cut["leadElePt"] &&
 	        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) <= cut["eleEta"] ) {
 	        
@@ -520,9 +520,8 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	        return false;
 	    }
 	} 
-	// Check if there are exactly two muons and no electrons
+	// Check if there is one muon and zero electrons
 	else if (thisEvent->getSelElectrons()->size() == 0 && thisEvent->getSelMuons()->size() == 1) {
-	    // Case 2: Two muons, no electrons
 	    if (thisEvent->getSelMuons()->at(0)->getp4()->Pt() >= cut["leadMuonPt"] &&
 	        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) <= cut["muonEta"] ) {
 	            
@@ -973,17 +972,17 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
     hElecNumber->Fill(thisEvent->getnSelElectron(),_weight*thisEvent->getbTagSys());
     hMuonNumber->Fill(thisEvent->getnSelMuon(),_weight*thisEvent->getbTagSys());
 
-    if(thisEvent->getnSelMuon() == 2){
-	hDiMuonMass->Fill(thisEvent->getSelMuonsMass(),_weight*thisEvent->getbTagSys());
-	hDiMuonPT->Fill(thisEvent->getSelMuonsPT(),_weight*thisEvent->getbTagSys());
-	hDiMuonEta->Fill(thisEvent->getSelMuonsEta(),_weight*thisEvent->getbTagSys());
-    }
+//    if(thisEvent->getnSelMuon() == 2){
+//	hDiMuonMass->Fill(thisEvent->getSelMuonsMass(),_weight*thisEvent->getbTagSys());
+//	hDiMuonPT->Fill(thisEvent->getSelMuonsPT(),_weight*thisEvent->getbTagSys());
+//	hDiMuonEta->Fill(thisEvent->getSelMuonsEta(),_weight*thisEvent->getbTagSys());
+//    }
 
-    if(thisEvent->getnSelElectron() == 2){
-	hDiElectronMass->Fill(thisEvent->getSelElectronsMass(),_weight*thisEvent->getbTagSys());
-	hDiElectronPT->Fill(thisEvent->getSelElectronsPT(),_weight*thisEvent->getbTagSys());
-	hDiElectronEta->Fill(thisEvent->getSelElectronsEta(),_weight*thisEvent->getbTagSys());
-    }
+//    if(thisEvent->getnSelElectron() == 2){
+//	hDiElectronMass->Fill(thisEvent->getSelElectronsMass(),_weight*thisEvent->getbTagSys());
+//	hDiElectronPT->Fill(thisEvent->getSelElectronsPT(),_weight*thisEvent->getbTagSys());
+//	hDiElectronEta->Fill(thisEvent->getSelElectronsEta(),_weight*thisEvent->getbTagSys());
+//    }
 
     hleptonHT->Fill(thisEvent->getSelLeptonHT(),_weight*thisEvent->getbTagSys());
     hST->Fill(thisEvent->getSelLeptonST(),_weight*thisEvent->getbTagSys());
@@ -1002,7 +1001,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hElePT1->Fill(thisEvent->getSelElectrons()->at(0)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
 	hEleEta1->Fill(thisEvent->getSelElectrons()->at(0)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
     }
-    
+  /*  
     if(thisEvent->getnSelMuon() > 1){
 	hMuonPT2->Fill(thisEvent->getSelMuons()->at(1)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
 	hMuonEta2->Fill(thisEvent->getSelMuons()->at(1)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
@@ -1012,7 +1011,7 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	hElePT2->Fill(thisEvent->getSelElectrons()->at(1)->getp4()->Pt(), _weight*thisEvent->getbTagSys());
 	hEleEta2->Fill(thisEvent->getSelElectrons()->at(1)->getp4()->Eta(), _weight*thisEvent->getbTagSys());
     } 
-
+*/
     hLepCharge1->Fill(thisEvent->getSelLeptons()->at(0)->charge, _weight*thisEvent->getbTagSys());
 //    hLepCharge2->Fill(thisEvent->getSelLeptons()->at(1)->charge, _weight*thisEvent->getbTagSys());
     
@@ -1468,7 +1467,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	muonPT1 = -6;
 	muonEta1 = -6;
     }
-
+/*
     if(thisEvent->getnSelMuon() > 1){
 	muonPT2 = thisEvent->getSelMuons()->at(1)->getp4()->Pt();
 	muonEta2 = thisEvent->getSelMuons()->at(1)->getp4()->Eta();
@@ -1478,7 +1477,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	muonEta2 = -6;
 	diMuonMass = -6;
     } 
-
+*/
     if(thisEvent->getnSelElectron() > 0){
 	elePT1 = thisEvent->getSelElectrons()->at(0)->getp4()->Pt();
 	eleEta1 = thisEvent->getSelElectrons()->at(0)->getp4()->Eta();
@@ -1486,7 +1485,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	elePT1 = -6;
 	eleEta1 = -6;
     }
-
+/*
     if(thisEvent->getnSelElectron() > 1){
 	elePT2 = thisEvent->getSelElectrons()->at(1)->getp4()->Pt();
 	eleEta2 = thisEvent->getSelElectrons()->at(1)->getp4()->Eta();
@@ -1497,7 +1496,7 @@ void ttHHanalyzer::fillTree(event * thisEvent){
 	diElectronMass = -6;
     } 
 
-    
+  */  
     _inputTree->Fill();
 }
 
