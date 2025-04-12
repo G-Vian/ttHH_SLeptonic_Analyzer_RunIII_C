@@ -67,6 +67,7 @@ struct eventBuffer
   std::vector<float>	Electron_mvaFall17V2Iso;
   std::vector<bool>	Electron_mvaFall17V2Iso_WP80;
   std::vector<bool>	Electron_mvaFall17V2Iso_WP90;
+  std::vector<bool>	Electron_mvaIso_WP90;
   std::vector<bool>	Electron_mvaFall17V2Iso_WPL;
   std::vector<float>	Electron_mvaFall17V2noIso;
   std::vector<bool>	Electron_mvaFall17V2noIso_WP80;
@@ -238,6 +239,7 @@ struct eventBuffer
   std::vector<float>	Jet_btagDeepCvB;
   std::vector<float>	Jet_btagDeepCvL;
   std::vector<float>	Jet_btagDeepFlavB;
+  std::vector<float>	Jet_btagPNetB;
   std::vector<float>	Jet_btagDeepFlavCvB;
   std::vector<float>	Jet_btagDeepFlavCvL;
   std::vector<float>	Jet_btagDeepFlavQG;
@@ -1152,6 +1154,7 @@ struct eventBuffer
     float	mvaFall17V2Iso;
     bool	mvaFall17V2Iso_WP80;
     bool	mvaFall17V2Iso_WP90;
+    bool	mvaIso_WP90;
     bool	mvaFall17V2Iso_WPL;
     float	mvaFall17V2noIso;
     bool	mvaFall17V2noIso_WP80;
@@ -1215,6 +1218,7 @@ struct eventBuffer
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2Iso", ( double)mvaFall17V2Iso); os << r;
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2Iso_WP80", ( double)mvaFall17V2Iso_WP80); os << r;
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2Iso_WP90", ( double)mvaFall17V2Iso_WP90); os << r;
+      sprintf(r, "  %-32s: %f\n", "mvaIso_WP90", ( double)mvaIso_WP90); os << r;
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2Iso_WPL", ( double)mvaFall17V2Iso_WPL); os << r;
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2noIso", ( double)mvaFall17V2noIso); os << r;
       sprintf(r, "  %-32s: %f\n", "mvaFall17V2noIso_WP80", ( double)mvaFall17V2noIso_WP80); os << r;
@@ -2248,6 +2252,7 @@ struct eventBuffer
         Electron[i].mvaFall17V2Iso	= Electron_mvaFall17V2Iso[i];
         Electron[i].mvaFall17V2Iso_WP80	= (bool)Electron_mvaFall17V2Iso_WP80[i];
         Electron[i].mvaFall17V2Iso_WP90	= (bool)Electron_mvaFall17V2Iso_WP90[i];
+	Electron[i].mvaIso_WP90	= (bool)Electron_mvaIso_WP90[i];
         Electron[i].mvaFall17V2Iso_WPL	= (bool)Electron_mvaFall17V2Iso_WPL[i];
         Electron[i].mvaFall17V2noIso	= Electron_mvaFall17V2noIso[i];
         Electron[i].mvaFall17V2noIso_WP80	= (bool)Electron_mvaFall17V2noIso_WP80[i];
@@ -2483,6 +2488,7 @@ struct eventBuffer
         Jet[i].btagDeepCvB	= Jet_btagDeepCvB[i];
         Jet[i].btagDeepCvL	= Jet_btagDeepCvL[i];
         Jet[i].btagDeepFlavB	= Jet_btagDeepFlavB[i];
+	Jet[i].btagPNetB	= Jet_btagPNetB[i];
         Jet[i].btagDeepFlavCvB	= Jet_btagDeepFlavCvB[i];
         Jet[i].btagDeepFlavCvL	= Jet_btagDeepFlavCvL[i];
         Jet[i].btagDeepFlavQG	= Jet_btagDeepFlavQG[i];
@@ -2908,6 +2914,7 @@ struct eventBuffer
             Electron_mvaFall17V2Iso[i]	= Electron_mvaFall17V2Iso[j];
             Electron_mvaFall17V2Iso_WP80[i]	= Electron_mvaFall17V2Iso_WP80[j];
             Electron_mvaFall17V2Iso_WP90[i]	= Electron_mvaFall17V2Iso_WP90[j];
+	    Electron_mvaIso_WP90[i]	= Electron_mvaIso_WP90[j];
             Electron_mvaFall17V2Iso_WPL[i]	= Electron_mvaFall17V2Iso_WPL[j];
             Electron_mvaFall17V2noIso[i]	= Electron_mvaFall17V2noIso[j];
             Electron_mvaFall17V2noIso_WP80[i]	= Electron_mvaFall17V2noIso_WP80[j];
@@ -3215,6 +3222,7 @@ struct eventBuffer
             Jet_btagDeepCvB[i]	= Jet_btagDeepCvB[j];
             Jet_btagDeepCvL[i]	= Jet_btagDeepCvL[j];
             Jet_btagDeepFlavB[i]	= Jet_btagDeepFlavB[j];
+	    Jet_btagPNetB[i]	=         Jet_btagPNetB[j];
             Jet_btagDeepFlavCvB[i]	= Jet_btagDeepFlavCvB[j];
             Jet_btagDeepFlavCvL[i]	= Jet_btagDeepFlavCvL[j];
             Jet_btagDeepFlavQG[i]	= Jet_btagDeepFlavQG[j];
@@ -3665,6 +3673,7 @@ struct eventBuffer
     choose["Electron_mvaFall17V2Iso"]	= DEFAULT;
     choose["Electron_mvaFall17V2Iso_WP80"]	= DEFAULT;
     choose["Electron_mvaFall17V2Iso_WP90"]	= DEFAULT;
+    choose["Electron_mvaIso_WP90"]	= DEFAULT;
     choose["Electron_mvaFall17V2Iso_WPL"]	= DEFAULT;
     choose["Electron_mvaFall17V2noIso"]	= DEFAULT;
     choose["Electron_mvaFall17V2noIso_WP80"]	= DEFAULT;
@@ -4287,6 +4296,7 @@ struct eventBuffer
     choose["Jet_btagDeepCvB"]	= DEFAULT;
     choose["Jet_btagDeepCvL"]	= DEFAULT;
     choose["Jet_btagDeepFlavB"]	= DEFAULT;
+    choose["Jet_btagPNetB"]	= DEFAULT;  
     choose["Jet_btagDeepFlavCvB"]	= DEFAULT;
     choose["Jet_btagDeepFlavCvL"]	= DEFAULT;
     choose["Jet_btagDeepFlavQG"]	= DEFAULT;
@@ -4802,6 +4812,9 @@ struct eventBuffer
     if ( choose["Electron_mvaFall17V2Iso_WP90"] )
       input->select("Events/Electron_mvaFall17V2Iso_WP90",
                      Electron_mvaFall17V2Iso_WP90);
+    if ( choose["Electron_mvaIso_WP90"] )
+      input->select("Events/Electron_mvaIso_WP90",
+                     Electron_mvaIso_WP90);
     if ( choose["Electron_mvaFall17V2Iso_WPL"] )
       input->select("Events/Electron_mvaFall17V2Iso_WPL",
                      Electron_mvaFall17V2Iso_WPL);
@@ -6357,6 +6370,8 @@ struct eventBuffer
       input->select("Events/Jet_btagDeepCvL", 	Jet_btagDeepCvL);
     if ( choose["Jet_btagDeepFlavB"] )
       input->select("Events/Jet_btagDeepFlavB", 	Jet_btagDeepFlavB);
+    if ( choose["Jet_btagPNetB"] )
+      input->select("Events/Jet_btagPNetB", 	Jet_btagPNetB);
     if ( choose["Jet_btagDeepFlavCvB"] )
       input->select("Events/Jet_btagDeepFlavCvB", 	Jet_btagDeepFlavCvB);
     if ( choose["Jet_btagDeepFlavCvL"] )
@@ -7257,6 +7272,8 @@ struct eventBuffer
                  Electron_mvaFall17V2Iso_WP80);
     output->add("Events/Electron_mvaFall17V2Iso_WP90[nElectron]",
                  Electron_mvaFall17V2Iso_WP90);
+    output->add("Events/Electron_mvaIso_WP90[nElectron]",
+                 Electron_mvaIso_WP90);
     output->add("Events/Electron_mvaFall17V2Iso_WPL[nElectron]",
                  Electron_mvaFall17V2Iso_WPL);
     output->add("Events/Electron_mvaFall17V2noIso[nElectron]",
@@ -8196,6 +8213,7 @@ struct eventBuffer
     output->add("Events/Jet_btagDeepCvB[nJet]", 	Jet_btagDeepCvB);
     output->add("Events/Jet_btagDeepCvL[nJet]", 	Jet_btagDeepCvL);
     output->add("Events/Jet_btagDeepFlavB[nJet]", 	Jet_btagDeepFlavB);
+    output->add("Events/Jet_btagPNetB[nJet]", 	Jet_btagPNetB);
     output->add("Events/Jet_btagDeepFlavCvB[nJet]", 	Jet_btagDeepFlavCvB);
     output->add("Events/Jet_btagDeepFlavCvL[nJet]", 	Jet_btagDeepFlavCvL);
     output->add("Events/Jet_btagDeepFlavQG[nJet]", 	Jet_btagDeepFlavQG);
@@ -8683,6 +8701,7 @@ struct eventBuffer
     Electron_mvaFall17V2Iso	= std::vector<float>(25,0);
     Electron_mvaFall17V2Iso_WP80	= std::vector<bool>(25,0);
     Electron_mvaFall17V2Iso_WP90	= std::vector<bool>(25,0);
+    Electron_mvaIso_WP90	= std::vector<bool>(25,0);
     Electron_mvaFall17V2Iso_WPL	= std::vector<bool>(25,0);
     Electron_mvaFall17V2noIso	= std::vector<float>(25,0);
     Electron_mvaFall17V2noIso_WP80	= std::vector<bool>(25,0);
@@ -8854,6 +8873,7 @@ struct eventBuffer
     Jet_btagDeepCvB	= std::vector<float>(45,0);
     Jet_btagDeepCvL	= std::vector<float>(45,0);
     Jet_btagDeepFlavB	= std::vector<float>(45,0);
+    Jet_btagPNetB	= std::vector<float>(45,0);
     Jet_btagDeepFlavCvB	= std::vector<float>(45,0);
     Jet_btagDeepFlavCvL	= std::vector<float>(45,0);
     Jet_btagDeepFlavQG	= std::vector<float>(45,0);
