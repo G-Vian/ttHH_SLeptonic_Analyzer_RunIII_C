@@ -1616,6 +1616,7 @@ struct eventBuffer
     float	btagDeepCvB;
     float	btagDeepCvL;
     float	btagDeepFlavB;
+    float	btagPNetB;
     float	btagDeepFlavCvB;
     float	btagDeepFlavCvL;
     float	btagDeepFlavQG;
