@@ -1679,6 +1679,7 @@ struct eventBuffer
       sprintf(r, "  %-32s: %f\n", "btagDeepCvB", ( double)btagDeepCvB); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepCvL", ( double)btagDeepCvL); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavB", ( double)btagDeepFlavB); os << r;
+      sprintf(r, "  %-32s: %f\n", "btagPNetB", ( double)btagPNetB); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavCvB", ( double)btagDeepFlavCvB); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavCvL", ( double)btagDeepFlavCvL); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavQG", ( double)btagDeepFlavQG); os << r;
