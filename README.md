@@ -1,5 +1,5 @@
 ## Description of the analyzer
-- This repository contains an analyzer for the ***ttHH Run II hadronic channel***. 
+- This repository contains an analyzer for the ***ttHH Run III single leptonic channel***. 
 - While the current code focuses on trigger studies, the overall framework is versatile enough for full analysis. 
 - We strive to rely solely on ROOT libraries and are in the process of phasing out several “deprecated” libraries ( ex. HypothesisCombinatorics.h, MVAvarsJABDTthh.h, ... ), though this goal hasn’t been fully achieved yet.
 
@@ -18,7 +18,7 @@ Note that lxplus does not support the el7 environment directly now, so you’ll 
 cmssw-el7
 cmsrel CMSSW_10_6_28
 cd CMSSW_10_6_28/src && cmsenv
-git clone https://github.com/G-Vian/ttHH_SLeptonic_Analyzer.git
+git clone https://github.com/G-Vian/ttHH_SLeptonic_Analyzer_RunIII.git
 # Before using xrood protocol to copy TTH directory, please get the proxy first
 xrdcp root://eosuser.cern.ch//eos/user/j/junghyun/public/TTH.tar.gz .
 # If above line doesn't work, then download [ TTH.tar.gz ] at CERNBOX link:
@@ -33,7 +33,7 @@ mv TTH  ttHH_SLeptonic_Analyzer/.
 ## Compilation to make execution file
 ```bash
 cmssw-el7
-cd <Path to Analyzer>/ttHH_SLeptonic_Analyzer
+cd <Path to Analyzer>/ttHH_SLeptonic_Analyzer_RunIII
 cmsenv
 source setup.sh  # required for setup
 make -j4
@@ -44,7 +44,7 @@ make -j4
 ## All in one line (faster):
 ```bash
 cmssw-el7
-git clone https://github.com/G-Vian/ttHH_SLeptonic_Analyzer.git && wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz && tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz && mv TTH  ttHH_SLeptonic_Analyzer/. && cd ttHH_SLeptonic_Analyzer && cmsenv && source setup.sh  && make -j4 
+git clone https://github.com/G-Vian/ttHH_SLeptonic_Analyzer_RunIII.git && wget https://cernbox.cern.ch/remote.php/dav/public-files/xPBQqigATEjgFQb/TTH.tar.gz && tar -zxvf TTH.tar.gz && rm -rf TTH.tar.gz && mv TTH  ttHH_SLeptonic_Analyzer_RunIII/. && cd ttHH_SLeptonic_Analyzer_RunIII && cmsenv && source setup.sh  && make -j4 
 ```
 
 
