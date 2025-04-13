@@ -153,9 +153,16 @@ float getValbTagTight(const std::string& year) {
         return valbTagTight2017;
     } else if (year == "2018") {
         return valbTagTight2018;
+    } else if (year == "2022EE") {
+        return valbTagTight2022E;
+    } else if (year == "2022") {
+        return valbTagTight2022;
+    } else if (year == "2023B") {
+        return valbTagTight2023B;
+    } else if (year == "2023") {
+        return valbTagTight2023;
     }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+    return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
 
 float getValbTagMedium(const std::string& year) {
@@ -163,9 +170,16 @@ float getValbTagMedium(const std::string& year) {
         return valbTagMedium2017;
     } else if (year == "2018") {
         return valbTagMedium2018;
+    } else if (year == "2022EE") {
+        return valbTagMedium2022E;
+    } else if (year == "2022") {
+        return valbTagMedium2022;
+    } else if (year == "2023B") {
+        return valbTagMedium2023B;
+    } else if (year == "2023") {
+        return valbTagMedium2023;
     }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+    return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
 
 float getValbTagLoose(const std::string& year) {
@@ -173,66 +187,17 @@ float getValbTagLoose(const std::string& year) {
         return valbTagLoose2017;
     } else if (year == "2018") {
         return valbTagLoose2018;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-float getValbTagTight(const std::string& year) {
-    if (year == "2022EE") {
-        return valbTagTight2022E;
-    } else if (year == "2022") {
-        return valbTagTight2022;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-float getValbTagTight(const std::string& year) {
-    if (year == "2023B") {
-        return valbTagTight2023B;
-    } else if (year == "2023") {
-        return valbTagTight2023;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-float getValbTagMedium(const std::string& year) {
-    if (year == "2022EE") {
-        return valbTagMedium2022E;
-    } else if (year == "2022") {
-        return valbTagMedium2022;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-float getValbTagMedium(const std::string& year) {
-    if (year == "2023B") {
-        return valbTagMedium2023B;
-    } else if (year == "2023") {
-        return valbTagMedium2023;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-
-float getValbTagLoose(const std::string& year) {
-    if (year == "2022EE") {
+    } else if (year == "2022EE") {
         return valbTagLoose2022E;
     } else if (year == "2022") {
         return valbTagLoose2022;
-    }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
-}
-float getValbTagLoose(const std::string& year) {
-    if (year == "2023B") {
+    } else if (year == "2023B") {
         return valbTagLoose2023B;
     } else if (year == "2023") {
         return valbTagLoose2023;
     }
-    // Caso o ano não seja nem 2017 nem 2018, pode retornar um valor padrão ou tratar o erro
-    return -1.0f;  // Exemplo de retorno para caso não encontre o ano
+    return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
-
 };
 
 class objectMET:public objectPhysics {
