@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+
+#!/usr/bin/env python
+# Attention: this works only for versions of Python below 3.7!
 
 import os
 import sys
@@ -10,16 +12,16 @@ import ProxyChecker
 import resultChecker
 
 
-class CondorJobManager:
+class CondorJobManager(object):
 
     def __init__(self):
 
         self.time_info = time.strftime("%Y%m%d-%H%M%S")
 
         # Variables for jobs, Please check before you run this script
-        self.analyzer_path = f"{script_dir}"
+        self.analyzer_path = script_dir
         self.nameofExe = "ttHHanalyzer_trigger" # Name of compiled execution file to run analyzer
-        self.path_output_base = "/eos/user/g/gvian"
+        self.path_output_base = "/eos/user/g/gvian/job"
         self.os_version = "el7"
         self.memorySize = "10 GB"
         self.jobFlavour = "tomorrow"
@@ -33,11 +35,11 @@ class CondorJobManager:
         self.make_directory(self.path_output_base, 777) # 2nd argument is for the permissionsn
 
         try:
-            print(f"Setted Path of proxy : {self.proxy_path}")
+            print("Setted Path of proxy : {0}".format(self.proxy_path))
             proxy_checker = ProxyChecker.ProxyChecker(self.proxy_path)
             proxy_checker.check()
         except Exception as e:
-            print(f"{e}") # Error Messages which are defined in ProxyChecker.py
+            print("{0}".format(e)) # Error Messages which are defined in ProxyChecker.py
             sys.exit(1)
 
         self.print_memory_status()
@@ -46,19 +48,20 @@ class CondorJobManager:
 
     def make_directory(self, path, permission=755):
         try:
-            subprocess.run(['mkdir', '-p', path], check=True)
+            subprocess.call(['mkdir', '-p', path])
         except subprocess.CalledProcessError as e:
-            print(f"  Error creating drectory {path} : {e}")
+            print("  Error creating drectory {0} : {1}".format(path, e))
             sys.exit(1)
        
         if permission == 777:
             chmod_cmd = ['chmod', '777', path]
-            result = subprocess.run(chmod_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.Popen(chmod_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = result.communicate()
             if result.returncode != 0:
-                print(f"Error setting permissions on output directory: {result.stderr}")
+                print("Error setting permissions on output directory: {0}".format(stderr))
                 sys.exit(1)
             else:
-                print(f"Set permissions to 777 for {path}")
+                print("Set permissions to 777 for {0}".format(path))
 
 
     def process_config_file(self):
@@ -74,7 +77,7 @@ class CondorJobManager:
                     self.setup_and_submit_job()
 
                 except Exception as e:
-                    print("  Error with process of the condor job submition with {line} : {e}")
+                    print("  Error with process of the condor job submition with {0} : {1}".format(line, e))
                     continue
 
 
@@ -82,7 +85,7 @@ class CondorJobManager:
         # Parse the configuration line into individual components
         parts = line.strip().split()
         if len(parts) < 6:
-            raise ValueError(f"Invalid configuration line (expected at least 6 fields) : {line}")
+            raise ValueError("Invalid configuration line (expected at least 6 fields) : {0}".format(line))
 
         self.file_list_name = parts[0]
         self.output_dir = parts[1]
@@ -93,10 +96,10 @@ class CondorJobManager:
 
         self.path_output = os.path.join(self.path_output_base, self.output_dir + "/")
 
-        self.script_name = os.path.join(self.condor_files_path, f"run_{self.output_dir}.sh")
-        self.condor_submit_name = os.path.join(self.condor_files_path, f"{self.output_dir}_condor.sub")
-        self.arg_list_file = os.path.join(self.condor_files_path, f"arguments_{self.output_dir}.txt")
-        self.tmp_folder = os.path.join(self.condor_files_path, f"tmp_{self.output_dir}_{self.time_info}")
+        self.script_name = os.path.join(self.condor_files_path, "run_{0}.sh".format(self.output_dir))
+        self.condor_submit_name = os.path.join(self.condor_files_path, "{0}_condor.sub".format(self.output_dir))
+        self.arg_list_file = os.path.join(self.condor_files_path, "arguments_{0}.txt".format(self.output_dir))
+        self.tmp_folder = os.path.join(self.condor_files_path, "tmp_{0}_{1}".format(self.output_dir, self.time_info))
         self.make_directory(self.tmp_folder)
 
 
@@ -107,23 +110,23 @@ class CondorJobManager:
 
         # Print system memory status
         print("\nSystem Memory Status:")
-        subprocess.run(['free', '-h'])
+        subprocess.call(['free', '-h'])
 
         ### Print disk usage status
         ##print("\nDisk Usage Status:")
-        ##subprocess.run(['df', '-h'])
+        ##subprocess.call(['df', '-h'])
         
         # Print User Home directory space
         print("\nUser Home Memory Status:")
-        subprocess.run(['fs', 'lq'])
+        subprocess.call(['fs', 'lq'])
 
         # Check EOS storage space
         print("\nEOS Storage Space:")
         eos_command = ['eos', 'quota']
         try:
-            subprocess.run(eos_command)
+            subprocess.call(eos_command)
         except Exception as e:
-            print(f"Error checking EOS storage space: {e}")
+            print("Error checking EOS storage space: {0}".format(e))
 
         print("\n--------------------------------------------------------------------------\n")
 
@@ -135,26 +138,29 @@ class CondorJobManager:
 
         # Check if the directory exists
         check_dir_cmd = eos_base_cmd + ['ls', self.path_output]
-        result = subprocess.run(check_dir_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.Popen(check_dir_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = result.communicate()
         if result.returncode != 0:
             # Directory does not exist, create it
-            print(f"Creating EOS output directory: {self.path_output}")
+            print("Creating EOS output directory: {0}".format(self.path_output))
             mkdir_cmd = eos_base_cmd + ['mkdir', '-p', self.path_output]
-            result = subprocess.run(mkdir_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.Popen(mkdir_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = result.communicate()
             if result.returncode != 0:
-                print(f"Error creating output directory: {result.stderr}")
+                print("Error creating output directory: {0}".format(stderr))
                 sys.exit(1)
         else:
-            print(f"EOS output directory exists: {self.path_output}")
+            print("EOS output directory exists: {0}".format(self.path_output))
 
         # Set permissions to 755
         chmod_cmd = eos_base_cmd + ['chmod', '755', self.path_output]
-        result = subprocess.run(chmod_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.Popen(chmod_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = result.communicate()
         if result.returncode != 0:
-            print(f"Error setting permissions on output directory: {result.stderr}")
+            print("Error setting permissions on output directory: {0}".format(stderr))
             sys.exit(1)
         else:
-            print(f"Set permissions to 755 for {self.path_output}")
+            print("Set permissions to 755 for {0}".format(self.path_output))
 
 
     def generate_argument_list(self):
@@ -167,31 +173,33 @@ class CondorJobManager:
                 lines = [line.strip() for line in sample_list_in if line.strip() and not line.startswith('#')]
                 for line in lines:
                     # For each line, create a per-job filelist in the tmp_folder
-                    per_job_filelist_name = f"filelist_{self.output_dir}_{count}.txt"
+                    per_job_filelist_name = "filelist_{0}_{1}.txt".format(self.output_dir, count)
                     per_job_filelist_path = os.path.join(self.tmp_folder, per_job_filelist_name)
                     with open(per_job_filelist_path, 'w') as per_job_filelist:
                         per_job_filelist.write(line + '\n')
 
                     # Write the arguments for this job to the argument list file
-                    argout.write(f"{per_job_filelist_path} {self.output_dir}_{count}.root {self.weight} {self.year} {self.data_or_mc} {self.sample_name}\n")
+                    argout.write("{0} {1}_{2}.root {3} {4} {5} {6}\n".format(
+                        per_job_filelist_path, self.output_dir, count, 
+                        self.weight, self.year, self.data_or_mc, self.sample_name))
                     count += 1
 
     
     def write_condor_submission_file(self):
         # Create the Condor submission script
         with open(self.condor_submit_name, 'w') as f:
-            f.write(f"x509userproxy           = {self.proxy_path}\n")
+            f.write("x509userproxy           = {0}\n".format(self.proxy_path))
             f.write("getenv                  = True\n")
-            f.write(f"executable              = {self.script_name}\n")
+            f.write("executable              = {0}\n".format(self.script_name))
             f.write("arguments               = $(args)\n")
-            f.write(f"output                  = {os.path.join(self.tmp_folder, f'job_{self.sample_name}.$(ClusterId).$(ProcId).out')}\n")
-            f.write(f"MY.WantOS               = \"{self.os_version}\"\n")
+            f.write("output                  = {0}\n".format(os.path.join(self.tmp_folder, 'job_{0}.$(ClusterId).$(ProcId).out'.format(self.sample_name))))
+            f.write('MY.WantOS               = "{0}"\n'.format(self.os_version))
             f.write("MY.XRDCP_CREATE_DIR     = True\n")
-            f.write(f"error                   = {os.path.join(self.tmp_folder, f'error_{self.sample_name}.$(ClusterId).$(ProcId).err')}\n")
-            f.write(f"log                     = {os.path.join(self.condor_files_path, f'log_{self.sample_name}.$(ClusterId).log')}\n")
-            f.write(f"request_memory          = {self.memorySize}\n")
-            f.write(f"+JobFlavour             = \"{self.jobFlavour}\"\n")
-            f.write(f"queue args from {self.arg_list_file}\n")
+            f.write("error                   = {0}\n".format(os.path.join(self.tmp_folder, 'error_{0}.$(ClusterId).$(ProcId).err'.format(self.sample_name))))
+            f.write("log                     = {0}\n".format(os.path.join(self.condor_files_path, 'log_{0}.$(ClusterId).log'.format(self.sample_name))))
+            f.write("request_memory          = {0}\n".format(self.memorySize))
+            f.write('+JobFlavour             = "{0}"\n'.format(self.jobFlavour))
+            f.write("queue args from {0}\n".format(self.arg_list_file))
 
     def create_executable_script(self):
         # Create the executable script that Condor will run
@@ -202,25 +210,27 @@ class CondorJobManager:
             fout.write("echo 'START---------------'\n")
             fout.write("echo 'WORKDIR ' ${PWD}\n")
             fout.write("source \"/afs/cern.ch/cms/cmsset_default.sh\"\n")
-            fout.write(f"cd \"{self.analyzer_path}\"\n")
+            fout.write('cd "{0}"\n'.format(self.analyzer_path))
             fout.write("cmsenv\n")
             fout.write("echo 'WORKDIR ' ${PWD}\n")
-            fout.write(f"source \"{self.analyzer_path}/setup.sh\"\n")
+            fout.write('source "{0}/setup.sh"\n'.format(self.analyzer_path))
             # Prepare output directory in EOS
-            fout.write(f"eos root://eosuser.cern.ch mkdir -p {self.path_output}\n")
-            ##fout.write(f"eos root://eosuser.cern.ch chmod 777 {self.path_output}\n")
-            fout.write(f"\"{self.analyzer_path}/{self.nameofExe}\" \"$1\" \"root://eosuser.cern.ch/{self.path_output}$2\" \"$3\" \"$4\" \"$5\" \"$6\"\n")
+            fout.write("eos root://eosuser.cern.ch mkdir -p {0}\n".format(self.path_output))
+            ##fout.write("eos root://eosuser.cern.ch chmod 777 {0}\n".format(self.path_output))
+            fout.write('"{0}/{1}" "$1" "root://eosuser.cern.ch/{2}$2" "$3" "$4" "$5" "$6"\n'.format(
+                self.analyzer_path, self.nameofExe, self.path_output))
+
         subprocess.call(["chmod", "755", self.script_name])
 
 
     def submit_job(self):
         # Submit the job to Condor
-        print(f"Submitting job for sample: {self.sample_name}")
+        print("Submitting job for sample: {0}".format(self.sample_name))
         subprocess.call(["condor_submit", self.condor_submit_name])
 
     def setup_and_submit_job(self):
         # Run all steps to set up and submit the job
-        print(f"\nSetting up job for sample: {self.sample_name}")
+        print("\nSetting up job for sample: {0}".format(self.sample_name))
         self.generate_argument_list()
         self.create_executable_script()
         self.write_condor_submission_file()
