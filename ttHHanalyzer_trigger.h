@@ -1113,17 +1113,17 @@ class ttHHanalyzer {
 	tmpDirs.push_back(jet); 
 	jet->cd();
 
-	hmet = new TH1F("met"+trail, "MET"+trail, 50, 0, 500);
+	hmet = new TH1F("met"+trail, "MET"+trail, 50, 0, 1000);
 	hmetPhi = new TH1F("metPhi"+trail, "MET #phi"+trail, 50, -5, 5);
 	hmetEta = new TH1F("metEta"+trail, "MET #eta"+trail, 50, -5, 5);
 
 
 	for(int i=0; i < nHistsJets; i++){
 	    if(i < 3){
-		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 400);
+		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 800);
 		hjetsEtas.at(i) = new TH1F(TString::Format("jetEta%d",(i+1))+trail, TString::Format("jet%d #eta",i+1)+trail, 50, -4, 4);
 	    } else  {
-		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 200);
+		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 300);
 		hjetsEtas.at(i) = new TH1F(TString::Format("jetEta%d",(i+1))+trail, TString::Format("jet%d #eta",i+1)+trail, 50, -4, 4);
 
 	    }
@@ -1133,10 +1133,10 @@ class ttHHanalyzer {
 
 	for(int i=0; i < nHistsbJets; i++){
 	    if(i < 3){
-		hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 400);
+		hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 800);
 		hbjetsEtas.at(i) = new TH1F(TString::Format("bjetEta%d",(i+1))+trail, TString::Format("bjet%d #eta",i+1)+trail, 50, -4, 4);
 	    } else {
-	    hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 200);
+	    hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 350);
 	    hbjetsEtas.at(i) = new TH1F(TString::Format("bjetEta%d",(i+1))+trail, TString::Format("bjet%d #eta",i+1)+trail, 50, -4, 4);
 	    }
 	    hbjetsBTagDisc.at(i)  = new TH1F(TString::Format("bjetBTagDisc%d",(i+1))+trail, TString::Format("bjet%d btagDisc" ,i+1)+trail, 50, 0, 1);
@@ -1181,8 +1181,8 @@ class ttHHanalyzer {
 	hBjetAverageMassSqr = new TH1F("jetBAvgMassSqr"+trail, "(m^{2})_{b}^{avg}"+trail, 50, 0, 2500);
 	hHadronicHiggsSoftDropMass1 = new TH1F("higgsHadSoftDropMass1"+trail, "msoftdrop_{H_{had}}"+trail, 50, 0, 400);
 	hHadronicHiggsSoftDropMass2 = new TH1F("higgsHadSoftDropMass2"+trail, "msoftdrop_{H_{had}}"+trail, 50, 0, 300);
-	hjetHT = new TH1F("jetHT"+trail, "H_{T} [GeV]"+trail, 50, 0, 2000);
-	hBjetHT = new TH1F("jetBHT"+trail, "H_{T}^{b} [GeV]"+trail, 50, 0, 1200); 
+	hjetHT = new TH1F("jetHT"+trail, "H_{T} [GeV]"+trail, 50, 0, 3000);
+	hBjetHT = new TH1F("jetBHT"+trail, "H_{T}^{b} [GeV]"+trail, 50, 0, 2000); 
 	hHadronicHiggsHT = new TH1F("jetHadronicHiggsHT"+trail, "H_{T}^{H_{had}} [GeV]"+trail, 50, 0, 4000); 
 	hLightJetHT = new TH1F("jetLightHT"+trail, "H_{T}^{light} [GeV]"+trail, 50, 0, 1200); 
 	hjetNumber = new TH1F("jetNumber"+trail, "N_{jet}"+trail, 13, 2, 15);
@@ -1271,7 +1271,7 @@ class ttHHanalyzer {
 	hMuonNumber = new TH1F("MuonNumber"+trail, "N_{Muon}"+trail, 4, 0, 4);
 	    
 	hleptonNumber = new TH1F("lepNumber"+trail, "N_{lep}"+trail, 4, 0, 4);
-	hleptonHT = new TH1F("leptonHT"+trail, "H_{T}^{lep} [GeV]"+trail, 50, 0, 2000);
+	hleptonHT = new TH1F("leptonHT"+trail, "H_{T}^{lep} [GeV]"+trail, 50, 0, 3500);
 	hST = new TH1F("ST"+trail, "S_{T} [GeV]"+trail, 50, 0, 2000);
 	hDiMuonMass = new TH1F("diMuonMass"+trail, "m_{#mu#mu} [GeV]"+trail, 50, 0, 200);
 	hDiElectronMass = new TH1F("diEleMass"+trail, "m_{ee} [GeV]"+trail, 50, 0, 200);
@@ -1280,9 +1280,9 @@ class ttHHanalyzer {
 	hDiMuonEta = new TH1F("diMuonEta"+trail, "#eta_{#mu#mu}"+trail, 50, -3, 3);
 	hDiElectronEta = new TH1F("diEleEta"+trail, "#eta_{ee}"+trail, 50, -3, 3);
 
-	hLeptonPT1 = new TH1F("leptonPT1"+trail, "lepton p_{T,1}"+trail, 50, 0, 400);
-	hMuonPT1 = new TH1F("muonPT1"+trail, "muon p_{T,1}"+trail, 50, 0, 400);
-	hElePT1 = new TH1F("elePT1"+trail, "ele p_{T,1}"+trail, 50, 0, 400);
+	hLeptonPT1 = new TH1F("leptonPT1"+trail, "lepton p_{T,1}"+trail, 50, 0, 700);
+	hMuonPT1 = new TH1F("muonPT1"+trail, "muon p_{T,1}"+trail, 50, 0, 700);
+	hElePT1 = new TH1F("elePT1"+trail, "ele p_{T,1}"+trail, 50, 0, 700);
 
 	hLeptonPhi1 = new TH1F("leptonPhi1"+trail, "lepton #phi_{1}"+trail, 50, -4, 4);
 	hMuonPhi1 = new TH1F("muonPhi1"+trail, "muon #phi_{1}"+trail, 50, -4, 4);
@@ -1292,9 +1292,9 @@ class ttHHanalyzer {
 	hMuonEta1 = new TH1F("muonEta1"+trail, "muon #eta_{1}"+trail, 50, -3, 3);
 	hEleEta1 = new TH1F("eleEta1"+trail, "ele #eta_{1}"+trail, 50, -3, 3); 
 
-	hLeptonPT2 = new TH1F("leptonPT2"+trail, "lepton p_{T,2}"+trail, 50, 0, 250);
-	hMuonPT2 = new TH1F("muonPT2"+trail, "muon p_{T,2}"+trail, 50, 0, 250);
-	hElePT2 = new TH1F("elePT2"+trail, "ele p_{T,2}"+trail, 50, 0, 250);
+	hLeptonPT2 = new TH1F("leptonPT2"+trail, "lepton p_{T,2}"+trail, 50, 0, 500);
+	hMuonPT2 = new TH1F("muonPT2"+trail, "muon p_{T,2}"+trail, 50, 0, 500);
+	hElePT2 = new TH1F("elePT2"+trail, "ele p_{T,2}"+trail, 50, 0, 500);
 	hLeptonPhi2 = new TH1F("leptonPhi2"+trail, "lepton #phi_{2}"+trail, 50, -4, 4);
 	hMuonPhi2 = new TH1F("muonPhi2"+trail, "muon #phi_{2}"+trail, 50, -4, 4);
 	hElePhi2 = new TH1F("elePhi2"+trail, "ele #phi_{2}"+trail, 50, -4, 4);
