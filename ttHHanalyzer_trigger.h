@@ -1123,7 +1123,7 @@ class ttHHanalyzer {
 		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 1500);
 		hjetsEtas.at(i) = new TH1F(TString::Format("jetEta%d",(i+1))+trail, TString::Format("jet%d #eta",i+1)+trail, 50, -4, 4);
 	    } else  {
-		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 300);
+		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 350);
 		hjetsEtas.at(i) = new TH1F(TString::Format("jetEta%d",(i+1))+trail, TString::Format("jet%d #eta",i+1)+trail, 50, -4, 4);
 
 	    }
@@ -1133,7 +1133,7 @@ class ttHHanalyzer {
 
 	for(int i=0; i < nHistsbJets; i++){
 	    if(i < 3){
-		hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 800);
+		hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 1500);
 		hbjetsEtas.at(i) = new TH1F(TString::Format("bjetEta%d",(i+1))+trail, TString::Format("bjet%d #eta",i+1)+trail, 50, -4, 4);
 	    } else {
 	    hbjetsPTs.at(i) = new TH1F(TString::Format("bjetPT%d",(i+1))+trail, TString::Format("bjet%d p_{T} [GeV]",i+1)+trail, 50, 0, 350);
