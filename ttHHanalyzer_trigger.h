@@ -1120,7 +1120,7 @@ class ttHHanalyzer {
 
 	for(int i=0; i < nHistsJets; i++){
 	    if(i < 3){
-		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 800);
+		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 1500);
 		hjetsEtas.at(i) = new TH1F(TString::Format("jetEta%d",(i+1))+trail, TString::Format("jet%d #eta",i+1)+trail, 50, -4, 4);
 	    } else  {
 		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 300);
@@ -1181,8 +1181,8 @@ class ttHHanalyzer {
 	hBjetAverageMassSqr = new TH1F("jetBAvgMassSqr"+trail, "(m^{2})_{b}^{avg}"+trail, 50, 0, 2500);
 	hHadronicHiggsSoftDropMass1 = new TH1F("higgsHadSoftDropMass1"+trail, "msoftdrop_{H_{had}}"+trail, 50, 0, 400);
 	hHadronicHiggsSoftDropMass2 = new TH1F("higgsHadSoftDropMass2"+trail, "msoftdrop_{H_{had}}"+trail, 50, 0, 300);
-	hjetHT = new TH1F("jetHT"+trail, "H_{T} [GeV]"+trail, 50, 0, 3000);
-	hBjetHT = new TH1F("jetBHT"+trail, "H_{T}^{b} [GeV]"+trail, 50, 0, 2000); 
+	hjetHT = new TH1F("jetHT"+trail, "H_{T} [GeV]"+trail, 50, 0, 3500);
+	hBjetHT = new TH1F("jetBHT"+trail, "H_{T}^{b} [GeV]"+trail, 50, 0, 3500); 
 	hHadronicHiggsHT = new TH1F("jetHadronicHiggsHT"+trail, "H_{T}^{H_{had}} [GeV]"+trail, 50, 0, 4000); 
 	hLightJetHT = new TH1F("jetLightHT"+trail, "H_{T}^{light} [GeV]"+trail, 50, 0, 1200); 
 	hjetNumber = new TH1F("jetNumber"+trail, "N_{jet}"+trail, 13, 2, 15);
