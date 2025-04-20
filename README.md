@@ -90,7 +90,7 @@ We use a single Python script to check for the existence of a proxy and to gener
 Based on these files, ```submit_job_FH_Trigger.py``` will split and submit jobs. When you create a condor directory, submission files, execution scripts, and logs are automatically generated inside it.
 - Before you run the ```submit_job_FH_Trigger.py```, Adjust the variables at the top of the Python script to suit your situation.
 
-&#9655; To submit condor job:
+&#9655; To submit condor job (should be done out of the cmssw-el7 enviroment):
 ```bash
 python3 submit_job_FH_Trigger.py
 ```
