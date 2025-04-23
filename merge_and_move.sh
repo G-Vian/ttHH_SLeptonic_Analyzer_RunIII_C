@@ -1,5 +1,5 @@
 #!/bin/bash
-#how to use : chmod +x merge_and_move.sh   ./merge_and_move.sh
+#how to use : chmod +x merge_and_move.sh  &&   ./merge_and_move.sh
 
 # ==== User Configuration Section ====
 
