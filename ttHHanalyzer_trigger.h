@@ -48,8 +48,8 @@ map<std::string, float> cut {
     , {"eleEta", 2.5} // electron eta higher than
     , {"muonEta", 2.4} // muon eta higher than
     , {"boostedJetEta", 2.5} // boostedJet eta higher than
-    , {"muonIso", 0.25} // muon isolation less than
-    , {"eleIso", 0.06}  // ele isolation less than
+    , {"muonIso", 0.15} // muon isolation less than
+    , {"eleIso", 0.15}  // ele isolation less than (we set = to the muon Isolation)
     , {"jetID", 6}   // pass tight and tightLepVeto ID
     , {"jetPUid", 4}   // pass loose cut fail tight and medium
     , {"bTagDisc", 0.80}
