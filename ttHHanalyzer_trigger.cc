@@ -336,11 +336,11 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
     float dR = 0., deltaEta = 0., deltaPhi = 0.;
     for(int i=0; i < jet.size(); i++){
        	currentJet = new objectJet(jet[i].pt, jet[i].eta, jet[i].phi, jet[i].mass);
-	currentJet->bTagCSV = jet[i].btagPNetB;
+	currentJet->bTagCSV = jet[i].btagRobustParTAK4B;
 	currentJet->jetID = jet[i].jetId;
 	currentJet->jetPUid = jet[i].puId;
 	if(_sys && sysType == kJES){
-	    if(jet[i].btagPNetB > currentJet->getValbTagMedium(_year)){  	       
+	    if(jet[i].btagRobustParTAK4B > currentJet->getValbTagMedium(_year)){  	       
 		currentJet->scale(getSysJES(_hbJES, currentJet->getp4()->Pt()), up);
 	    } else {
 		currentJet->scale(getSysJES(_hJES, currentJet->getp4()->Pt()), up);
@@ -354,9 +354,9 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 	}
 	if(currentJet->getp4()->Pt() > cut["jetPt"] && fabs(currentJet->getp4()->Eta()) < abs(cut["jetEta"]) && currentJet->jetID >= cut["jetID"]){
 	    if((currentJet->getp4()->Pt() < cut["maxPt_PU"] && currentJet->jetPUid >= cut["jetPUid"]) || (currentJet->getp4()->Pt() >= cut["maxPt_PU"])){
-		if(jet[i].btagPNetB <= currentJet->getValbTagLoose(_year)){  	     
+		if(jet[i].btagRobustParTAK4B <= currentJet->getValbTagLoose(_year)){  	     
 		    thisEvent->selectLightJet(currentJet);
-		} else if(jet[i].btagPNetB > currentJet->getValbTagMedium(_year)){ 
+		} else if(jet[i].btagRobustParTAK4B > currentJet->getValbTagMedium(_year)){ 
 		    thisEvent->selectbJet(currentJet);
 		    if(!_sys || sysType == noSys) _hbJetEff->Fill(currentJet->getp4()->Pt());
 		    if(_sys && sysType==kbTag){
@@ -382,7 +382,7 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 		}
 		thisEvent->selectJet(currentJet);
 		if(!_sys || sysType == noSys) _hJetEff->Fill(currentJet->getp4()->Pt());
-		if(jet[i].btagPNetB > currentJet->getValbTagLoose(_year)){       	   
+		if(jet[i].btagRobustParTAK4B > currentJet->getValbTagLoose(_year)){       	   
 		    thisEvent->selectLoosebJet(currentJet);
 		}
 	    }	    
