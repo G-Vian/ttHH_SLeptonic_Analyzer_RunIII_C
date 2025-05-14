@@ -132,18 +132,19 @@ class objectJet:public objectPhysics {
     static constexpr float valbTagTight2018  = 0.7100; 
     static constexpr float valbTagMedium2018 = 0.2783; 
     static constexpr float valbTagLoose2018  = 0.0490; 
-    static constexpr float valbTagTight2022  = 0.6734; //22
-    static constexpr float valbTagMedium2022 = 0.245; 
-    static constexpr float valbTagLoose2022  = 0.047; 
-    static constexpr float valbTagTight2022E  = 0.6734; //22EE
-    static constexpr float valbTagMedium2022E = 0.245; 
-    static constexpr float valbTagLoose2022E  = 0.047; 
-    static constexpr float valbTagTight2023  = 0.6172; //23
-    static constexpr float valbTagMedium2023 = 0.1917; 
-    static constexpr float valbTagLoose2023  = 0.0358; 
-    static constexpr float valbTagTight2023B  = 0.6172; //23Bpix
-    static constexpr float valbTagMedium2023B = 0.1917; 
-    static constexpr float valbTagLoose2023B  = 0.0358; 
+//robustParticleTransformer
+    static constexpr float valbTagTight2022  = 0.8482; //22
+    static constexpr float valbTagMedium2022 = 0.4319; 
+    static constexpr float valbTagLoose2022  = 0.0849; 
+    static constexpr float valbTagTight2022E  = 0.8604; //22EE
+    static constexpr float valbTagMedium2022E = 0.451; 
+    static constexpr float valbTagLoose2022E  = 0.0897; 
+    static constexpr float valbTagTight2023  = 0.7969; //23
+    static constexpr float valbTagMedium2023 = 0.3487; 
+    static constexpr float valbTagLoose2023  = 0.0681; 
+    static constexpr float valbTagTight2023B  = 0.7994; //23Bpix
+    static constexpr float valbTagMedium2023B = 0.3494; 
+    static constexpr float valbTagLoose2023B  = 0.0683; 
     float valbTagTight;
     float valbTagMedium;
     float valbTagLoose;
