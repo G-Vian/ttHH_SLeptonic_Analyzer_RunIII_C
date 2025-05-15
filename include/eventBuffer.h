@@ -240,6 +240,7 @@ struct eventBuffer
   std::vector<float>	Jet_btagDeepCvL;
   std::vector<float>	Jet_btagDeepFlavB;
   std::vector<float>	Jet_btagPNetB;
+  std::vector<float>	Jet_btagRobustParTAK4B;
   std::vector<float>	Jet_btagDeepFlavCvB;
   std::vector<float>	Jet_btagDeepFlavCvL;
   std::vector<float>	Jet_btagDeepFlavQG;
@@ -1617,6 +1618,7 @@ struct eventBuffer
     float	btagDeepCvL;
     float	btagDeepFlavB;
     float	btagPNetB;
+    float       btagRobustParTAK4B;
     float	btagDeepFlavCvB;
     float	btagDeepFlavCvL;
     float	btagDeepFlavQG;
@@ -1681,6 +1683,7 @@ struct eventBuffer
       sprintf(r, "  %-32s: %f\n", "btagDeepCvL", ( double)btagDeepCvL); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavB", ( double)btagDeepFlavB); os << r;
       sprintf(r, "  %-32s: %f\n", "btagPNetB", ( double)btagPNetB); os << r;
+      sprintf(r, "  %-32s: %f\n", "btagRobustParTAK4B", ( double)btagRobustParTAK4B); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavCvB", ( double)btagDeepFlavCvB); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavCvL", ( double)btagDeepFlavCvL); os << r;
       sprintf(r, "  %-32s: %f\n", "btagDeepFlavQG", ( double)btagDeepFlavQG); os << r;
@@ -2491,6 +2494,7 @@ struct eventBuffer
         Jet[i].btagDeepCvL	= Jet_btagDeepCvL[i];
         Jet[i].btagDeepFlavB	= Jet_btagDeepFlavB[i];
 	Jet[i].btagPNetB	= Jet_btagPNetB[i];
+	Jet[i].btagRobustParTAK4B = Jet_btagRobustParTAK4B[i];
         Jet[i].btagDeepFlavCvB	= Jet_btagDeepFlavCvB[i];
         Jet[i].btagDeepFlavCvL	= Jet_btagDeepFlavCvL[i];
         Jet[i].btagDeepFlavQG	= Jet_btagDeepFlavQG[i];
@@ -3225,6 +3229,7 @@ struct eventBuffer
             Jet_btagDeepCvL[i]	= Jet_btagDeepCvL[j];
             Jet_btagDeepFlavB[i]	= Jet_btagDeepFlavB[j];
 	    Jet_btagPNetB[i]	=         Jet_btagPNetB[j];
+	    Jet_btagRobustParTAK4B[i]	=         Jet_btagRobustParTAK4B[j];
             Jet_btagDeepFlavCvB[i]	= Jet_btagDeepFlavCvB[j];
             Jet_btagDeepFlavCvL[i]	= Jet_btagDeepFlavCvL[j];
             Jet_btagDeepFlavQG[i]	= Jet_btagDeepFlavQG[j];
@@ -4299,6 +4304,7 @@ struct eventBuffer
     choose["Jet_btagDeepCvL"]	= DEFAULT;
     choose["Jet_btagDeepFlavB"]	= DEFAULT;
     choose["Jet_btagPNetB"]	= DEFAULT;  
+    choose["Jet_btagRobustParTAK4B"]	= DEFAULT;  
     choose["Jet_btagDeepFlavCvB"]	= DEFAULT;
     choose["Jet_btagDeepFlavCvL"]	= DEFAULT;
     choose["Jet_btagDeepFlavQG"]	= DEFAULT;
@@ -6374,6 +6380,8 @@ struct eventBuffer
       input->select("Events/Jet_btagDeepFlavB", 	Jet_btagDeepFlavB);
     if ( choose["Jet_btagPNetB"] )
       input->select("Events/Jet_btagPNetB", 	Jet_btagPNetB);
+    if ( choose["Jet_btagRobustParTAK4B"] )
+      input->select("Events/Jet_btagRobustParTAK4B", 	Jet_btagRobustParTAK4B);
     if ( choose["Jet_btagDeepFlavCvB"] )
       input->select("Events/Jet_btagDeepFlavCvB", 	Jet_btagDeepFlavCvB);
     if ( choose["Jet_btagDeepFlavCvL"] )
@@ -8216,6 +8224,7 @@ struct eventBuffer
     output->add("Events/Jet_btagDeepCvL[nJet]", 	Jet_btagDeepCvL);
     output->add("Events/Jet_btagDeepFlavB[nJet]", 	Jet_btagDeepFlavB);
     output->add("Events/Jet_btagPNetB[nJet]", 	Jet_btagPNetB);
+    output->add("Events/Jet_btagRobustParTAK4B;[nJet]", 	Jet_btagRobustParTAK4B);
     output->add("Events/Jet_btagDeepFlavCvB[nJet]", 	Jet_btagDeepFlavCvB);
     output->add("Events/Jet_btagDeepFlavCvL[nJet]", 	Jet_btagDeepFlavCvL);
     output->add("Events/Jet_btagDeepFlavQG[nJet]", 	Jet_btagDeepFlavQG);
@@ -8876,6 +8885,7 @@ struct eventBuffer
     Jet_btagDeepCvL	= std::vector<float>(45,0);
     Jet_btagDeepFlavB	= std::vector<float>(45,0);
     Jet_btagPNetB	= std::vector<float>(45,0);
+    Jet_btagRobustParTAK4B	= std::vector<float>(45,0);
     Jet_btagDeepFlavCvB	= std::vector<float>(45,0);
     Jet_btagDeepFlavCvL	= std::vector<float>(45,0);
     Jet_btagDeepFlavQG	= std::vector<float>(45,0);
