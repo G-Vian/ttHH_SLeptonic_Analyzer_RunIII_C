@@ -52,7 +52,7 @@ map<std::string, float> cut {
     , {"eleIso", 0.15}  // ele isolation less than (we set = to the muon Isolation)
     , {"jetID", 6}   // pass tight and tightLepVeto ID
     , {"jetPUid", 4}   // pass loose cut fail tight and medium
-    , {"bTagDisc", 0.80}
+    , {"bTagDisc", 0.80} // this is not the same as BTagDisc, with capital B. bTagDisc in this case is just a cut for the boosted jets.
     , {"trigger", 1} // trigger
     , {"filter", 1} // MET filter
     , {"pv", 0}}; // primary vertex  
