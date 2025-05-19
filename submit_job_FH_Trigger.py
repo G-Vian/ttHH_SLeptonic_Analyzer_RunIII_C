@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python
 # Attention: this works only for versions of Python below 3.7!
-# how to use : 
+# how to use : first you should be out of cmssw-el7, then use the command : python3 submit_job_FH_Trigger.py 
 # how to watch the job status: condor_q <job ID>
 # constant monitoring: watch -n 5 condor_q <job ID>
 import os
