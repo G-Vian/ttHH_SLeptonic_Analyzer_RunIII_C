@@ -1,4 +1,5 @@
 // norm plots with mean value and binning control
+
 #include <TFile.h>
 #include <TH1.h>
 #include <THStack.h>
@@ -28,13 +29,10 @@ struct ProcessInfo {
     string legendName;
 };
 
-struct XAxisRange {
-    double min;
-    double max;
-    bool useCustomRange;
-    
-    XAxisRange() : min(0), max(0), useCustomRange(false) {}
-    XAxisRange(double min_val, double max_val) : min(min_val), max(max_val), useCustomRange(true) {}
+struct BinSettings {
+    bool useFixedBinCount;  // true = use fixed number of bins, false = use rebinFactor
+    int fixedBinCount;      // Desired number of bins (when useFixedBinCount = true)
+    int rebinFactor;        // Traditional rebin factor (when useFixedBinCount = false)
 };
 
 struct HistogramSetting {
@@ -42,7 +40,8 @@ struct HistogramSetting {
     string title;
     string xAxisTitle;
     string saveName;
-    XAxisRange xRange; // Added X-axis range control
+    pair<double, double> xRange; // x-axis range (min, max)
+    BinSettings binSettings;     // Binning configuration
 };
 
 const string plotExtension = ".png"; // save file extension
@@ -92,14 +91,11 @@ TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const Histo
         return nullptr;
     }
 
-    double xAxisRange_low = First_Stacked_histo->GetXaxis()->GetXmin();
-    double xAxisRange_high = First_Stacked_histo->GetXaxis()->GetXmax();
-
-    // Apply custom X-axis range if specified
-    if (setting.xRange.useCustomRange) {
-        xAxisRange_low = setting.xRange.min;
-        xAxisRange_high = setting.xRange.max;
-    }
+    // Use the user-defined x-range if specified, otherwise use the histogram's range
+    double xAxisRange_low = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                           setting.xRange.first : First_Stacked_histo->GetXaxis()->GetXmin();
+    double xAxisRange_high = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                            setting.xRange.second : First_Stacked_histo->GetXaxis()->GetXmax();
 
     double maxVal = -std::numeric_limits<double>::max();
     double minVal = std::numeric_limits<double>::min();
@@ -121,7 +117,8 @@ TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const Histo
         double x = signal->GetBinCenter(i);
         
         // Skip points outside the specified X-axis range
-        if (setting.xRange.useCustomRange && (x < setting.xRange.min || x > setting.xRange.max)) {
+        if ((setting.xRange.first != 0 || setting.xRange.second != 0) && 
+            (x < setting.xRange.first || x > setting.xRange.second)) {
             continue;
         }
 
@@ -199,9 +196,6 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
     TH1* signalHist = nullptr;
     double maxY = 0;
 
-    // Número desejado de bins - você pode ajustar este valor
-    const int desiredBins = 10;  // Altere este número conforme necessário
-
     // Add background histograms to the stack
     for (const auto& histPair : histograms) {
         TH1* hist = histPair.first;
@@ -210,32 +204,45 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
             continue;
         }
 
-        // Rebinnar para o número desejado de bins
-        int originalBins = hist->GetNbinsX();
-        int rebinFactor = originalBins / desiredBins;
-        if (rebinFactor < 1) rebinFactor = 1;
+        TH1* processedHist = hist;
         
-        TH1* rebinnedHist = (TH1*)hist->Rebin(rebinFactor, Form("%s_rebinned", hist->GetName()));
-        
+        // Apply rebinning according to settings
+        if (setting.binSettings.useFixedBinCount) {
+            // Fixed number of bins method
+            int originalBins = hist->GetNbinsX();
+            int rebinFactor = originalBins / setting.binSettings.fixedBinCount;
+            if (rebinFactor < 1) rebinFactor = 1;
+            
+            processedHist = (TH1*)hist->Rebin(rebinFactor, Form("%s_rebinned", hist->GetName()));
+        } else {
+            // Traditional rebinning method
+            if (setting.binSettings.rebinFactor > 1) {
+                processedHist = (TH1*)hist->Rebin(setting.binSettings.rebinFactor, 
+                                                Form("%s_rebinned", hist->GetName()));
+            }
+        }
+
         // Apply X-axis range if specified
-        if (setting.xRange.useCustomRange) {
-            rebinnedHist->GetXaxis()->SetRangeUser(setting.xRange.min, setting.xRange.max);
+        if (setting.xRange.first != 0 || setting.xRange.second != 0) {
+            processedHist->GetXaxis()->SetRangeUser(setting.xRange.first, setting.xRange.second);
         }
         
-        // Normalizar para área unitária
-        if (rebinnedHist->Integral() != 0) rebinnedHist->Scale(1.0 / rebinnedHist->Integral());
+        // Normalize to unit area
+        if (processedHist->Integral() != 0) {
+            processedHist->Scale(1.0 / processedHist->Integral());
+        }
 
         if (histPair.second.isSignal) {
-            signalHist = rebinnedHist;
+            signalHist = processedHist;
         } else {
-            rebinnedHist->SetFillColor(0); // Sem preenchimento
-            rebinnedHist->SetLineColor(histPair.second.color); // Manter apenas a linha
-            rebinnedHist->SetLineWidth(2);
-            stack->Add(rebinnedHist);
-            cout << "Histograma de fundo adicionado à stack: " << histPair.second.legendName << endl;
+            processedHist->SetFillColor(0); // No fill
+            processedHist->SetLineColor(histPair.second.color);
+            processedHist->SetLineWidth(2);
+            stack->Add(processedHist);
+            cout << "Background histogram added to stack: " << histPair.second.legendName << endl;
         }
 
-        maxY = max(maxY, rebinnedHist->GetMaximum());
+        maxY = max(maxY, processedHist->GetMaximum());
     }
 
     if (!signalHist) {
@@ -267,21 +274,18 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
 
     stack->Draw("HIST");
     stack->GetXaxis()->SetTitle(setting.xAxisTitle.c_str());
-    stack->GetYaxis()->SetTitle("#bf{# of Events / bin}");
+    stack->GetYaxis()->SetTitle("#bf{Normalized Events / bin}");
     stack->SetMaximum(maxY * 10.0);
     stack->SetMinimum(1e-4);
     stack->GetXaxis()->SetLabelSize(0);
 
-    // X-axis settings
-    double xAxisRange_low = stack->GetXaxis()->GetXmin();
-    double xAxisRange_high = stack->GetXaxis()->GetXmax();
-    
-    // Apply custom X-axis range if specified
-    if (setting.xRange.useCustomRange) {
-        xAxisRange_low = setting.xRange.min;
-        xAxisRange_high = setting.xRange.max;
-    }
-    
+    // Use the user-defined x-range if specified, otherwise use the histogram's range
+    double xAxisRange_low = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                           setting.xRange.first : stack->GetXaxis()->GetXmin();
+    double xAxisRange_high = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                            setting.xRange.second : stack->GetXaxis()->GetXmax();
+
+    // Set the x-axis range
     stack->GetXaxis()->SetLimits(xAxisRange_low, xAxisRange_high);
     stack->GetXaxis()->SetNdivisions(505);
     stack->GetXaxis()->SetTickLength(0.03);
@@ -433,58 +437,62 @@ void Iteration_Directories_And_Histograms(const unordered_map<string, ProcessInf
 
 int Ploter_Norm() {
     unordered_map<string, ProcessInfo> processes = {
-         {"TTSL", {"TTSL.root", false, kOrange, "TTSL"}},
-          {"TTZ", {"TTZ.root", false, kCyan, "TTZ"}},
-          {"TTH", {"TTHTobb.root", false, kMagenta, "TTH"}},
-         {"TT4b", {"TT4b.root", false, kGreen, "TT4b"}},
-         {"TTZH", {"TTZH.root", false, kBlue, "TTZH"}},
+        {"TTSL", {"TTSL.root", false, kOrange, "TTSL"}},
+        {"TTZ", {"TTZ.root", false, kCyan, "TTZ"}},
+        {"TTH", {"TTHTobb.root", false, kMagenta, "TTH"}},
+        {"TT4b", {"TT4b.root", false, kGreen, "TT4b"}},
+        {"TTZH", {"TTZH.root", false, kBlue, "TTZH"}},
         {"TTZZ", {"TTZZ.root", false, kRed, "TTZZ"}},
         {"ttHH", {"ttHH.root", true, kBlack, "ttHH"}},
         // Add other processes as needed
     };
 
+    // Define histogram settings with binning options
     unordered_map<string, vector<HistogramSetting>> histogramSettings = {
         {"Lepton", 
             {
-                {"lepCharge1", "Lepton Charge 1 Distribution", "Charge", "lepCharge1", XAxisRange()},
-                {"lepCharge2", "Lepton Charge 2 Distribution", "Charge", "lepCharge2", XAxisRange()},
-                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber", XAxisRange()},
-                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber", XAxisRange()},
-                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber", XAxisRange()},
-                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1", XAxisRange(0, 500)}, // Example: set X-axis range 0-500 GeV
-                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", XAxisRange(0, 300)}, // Example: set X-axis range 0-300 GeV
-                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", XAxisRange(0, 500)},   // Example: set X-axis range 0-500 GeV
-                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", XAxisRange(0, 300)},   // Example: set X-axis range 0-300 GeV
-                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", XAxisRange(0, 1000)} // Example: set X-axis range 0-1000 GeV
+                // Format: {histName, title, xTitle, saveName, {xMin,xMax}, {useFixedBins, fixedBinCount, rebinFactor}}
+                {"lepCharge1", "Lepton Charge 1", "Charge", "lepCharge1", {0, 0}, {true, 10, 1}},
+                {"lepCharge2", "Lepton Charge 2", "Charge", "lepCharge2", {0, 0}, {true, 10, 1}},
+                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber", {0, 0}, {true, 5, 1}},
+                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber", {0, 0}, {true, 5, 1}},
+                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber", {0, 0}, {true, 5, 1}},
+                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1", {0, 500}, {true, 20, 1}},
+                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 300}, {true, 15, 1}},
+                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 500}, {true, 20, 1}},
+                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 300}, {true, 15, 1}},
+                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 1000}, {true, 25, 1}}
             }
         },
         {"jet", 
-        {
-            {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", XAxisRange(0, 800)},
-            {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", XAxisRange(0, 600)},
-            {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3", XAxisRange(0, 400)},
-            {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", XAxisRange(0, 300)},
-            {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", XAxisRange(0, 200)},
-            {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", XAxisRange(0, 150)},
-            {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", XAxisRange(0, 500)},
-            {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", XAxisRange(0, 300)},
-            {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", XAxisRange(0, 200)},
-            {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", XAxisRange(0, 150)},
-            {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", XAxisRange(0, 100)},
-            {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", XAxisRange(0, 80)},
-            {"jetHT", "Jet HT", "HT [GeV]", "jetHT", XAxisRange(0, 2000)},
-            {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", XAxisRange(0, 1000)},
-            {"met", "Missing ET", "ET [GeV]", "met", XAxisRange(0, 500)},
-            {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", XAxisRange()},
-            {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", XAxisRange()},
-            {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", XAxisRange(0, 1000)},
-            {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", XAxisRange(0, 1000)},
-            {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", XAxisRange(0, 1000)},
-            {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched", XAxisRange(0, 1000)}
+            {
+                {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 800}, {true, 20, 1}},
+                {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 600}, {true, 20, 1}},
+                {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3", {0, 400}, {true, 20, 1}},
+                {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 300}, {true, 15, 1}},
+                {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 200}, {false, 0, 2}},
+                {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 150}, {false, 0, 2}},
+                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 500}, {true, 20, 1}},
+                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 300}, {true, 15, 1}},
+                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 200}, {false, 0, 2}},
+                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 150}, {false, 0, 2}},
+                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 100}, {false, 0, 2}},
+                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 80}, {false, 0, 2}},
+                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 30, 1}},
+                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 25, 1}},
+                {"met", "Missing ET", "ET [GeV]", "met", {0, 500}, {true, 25, 1}},
+                {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {true, 10, 1}},
+                {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {true, 10, 1}},
+                {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched", {0, 1000}, {true, 25, 1}}
+            }
         }
-    }};
+    };
 
     Iteration_Directories_And_Histograms(processes, histogramSettings);
     return 0;
 }
+//to run use: cmssw-el7  cmsenv  root -l -b -q Ploter_Norm.cpp
 // to run use root -l -b -q Ploter_Norm.cpp
