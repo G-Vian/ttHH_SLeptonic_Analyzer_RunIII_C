@@ -103,122 +103,8 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 
     _ev->fillObjects();
 
-
-    if(_year == "2017"){
-	if(_DataOrMC == "Data"){
-	    thisEvent->setFilter(_ev->Flag_goodVertices ||
-				 _ev->Flag_globalSuperTightHalo2016Filter ||
-				 _ev->Flag_HBHENoiseFilter ||
-				 _ev->Flag_HBHENoiseIsoFilter ||
-				 _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||
-				 _ev->Flag_BadPFMuonFilter ||
-				 _ev->Flag_eeBadScFilter ||
-				 _ev->Flag_ecalBadCalibFilter);
-	    if(_sampleName == "ee"){
-		thisEvent->setTrigger((_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				       _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) // ||
-				      // _ev->HLT_Ele27_WPTight_Gsf)
-				      && !(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ ||
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8));// ||
-					   //_ev->HLT_IsoMu24_eta2p1 ||
-					   //_ev->HLT_IsoMu27));
-	    } else if(_sampleName == "emu"){ 
-		thisEvent->setTrigger((_ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				       _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				       _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				       _ev->HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ) 
-				      && !(_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-					   _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ  ||
-					   //  _ev->HLT_Ele27_WPTight_Gsf || 
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ ||
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8)); //||
-					   //_ev->HLT_IsoMu24_eta2p1 || 
-					   //_ev->HLT_IsoMu27));
-	    } else if(_sampleName == "mumu"){
-		thisEvent->setTrigger(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ ||
-                                      _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8); // ||
-		//_ev->HLT_IsoMu24_eta2p1 ||
-		//_ev->HLT_IsoMu27);
-	    }
-	} else if(_DataOrMC == "MC"){ 
-	    thisEvent->setFilter(_ev->Flag_goodVertices ||
-				 _ev->Flag_globalSuperTightHalo2016Filter ||
-				 _ev->Flag_HBHENoiseFilter ||
-				 _ev->Flag_HBHENoiseIsoFilter ||
-				 _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||
-				 _ev->Flag_BadPFMuonFilter ||
-				 _ev->Flag_eeBadScFilter ||
-				 _ev->Flag_ecalBadCalibFilter);
-	    thisEvent->setTrigger(_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Ele27_WPTight_Gsf ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Ele32_WPTight_Gsf ||
-				  _ev->HLT_IsoMu24_eta2p1 ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
-				  _ev->HLT_IsoMu24_eta2p1 ||
-				  _ev->HLT_IsoMu27);
-	}
-    }  else if(_year == "2018"){
-	if(_DataOrMC == "Data"){
-	    thisEvent->setFilter(_ev->Flag_goodVertices ||
-				 _ev->Flag_globalSuperTightHalo2016Filter ||
-				 _ev->Flag_HBHENoiseFilter ||
-				 _ev->Flag_HBHENoiseIsoFilter ||
-				 _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||
-				 _ev->Flag_BadPFMuonFilter ||
-				 _ev->Flag_eeBadScFilter ||
-				 _ev->Flag_eeBadScFilter ||
-				 _ev->Flag_ecalBadCalibFilter);
-	    if(_sampleName == "ee"){
-		thisEvent->setTrigger((_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				       _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				       _ev->HLT_Ele32_WPTight_Gsf)
-				      && !(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8  ||
-					   _ev->HLT_IsoMu24));
-	    } else if(_sampleName == "emu"){ 
-		thisEvent->setTrigger((_ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				       _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				       _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				       _ev->HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ) 
-				      && !(_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-					   _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ  ||
-					   _ev->HLT_Ele32_WPTight_Gsf || 
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
-					   _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
-					   _ev->HLT_IsoMu24)); 
-					  
-	    } else if(_sampleName == "mumu"){
-		thisEvent->setTrigger(_ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
-                                      _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 ||
-				      _ev->HLT_IsoMu24);
-	    }
-	} else if(_DataOrMC == "MC"){
-	    thisEvent->setFilter(_ev->Flag_goodVertices ||
-				 _ev->Flag_globalSuperTightHalo2016Filter ||
-				 _ev->Flag_HBHENoiseFilter ||
-				 _ev->Flag_HBHENoiseIsoFilter ||
-				 _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||
-				 _ev->Flag_BadPFMuonFilter ||
-				 _ev->Flag_eeBadScFilter ||
-				 _ev->Flag_ecalBadCalibFilter);
-	    thisEvent->setTrigger(_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Ele32_WPTight_Gsf ||
-				  _ev->HLT_IsoMu24 ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8);
-	}}
-       else if(_year == "2022" or _year == "2022EE" or _year == "2023" or _year == "2023B" or _year == "2024" ){
+// This trigger paths are for the SL channel!
+    if(_year == "2022" or _year == "2022EE" or _year == "2023" or _year == "2023B" or _year == "2024" ){
 	    if(_DataOrMC == "MC" or _DataOrMC == "Data"){thisEvent->setFilter(_ev->Flag_goodVertices ||				 
 		  					  _ev->Flag_globalSuperTightHalo2016Filter ||		
 		                                          _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||	
@@ -228,16 +114,10 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 		                        		  _ev->Flag_eeBadScFilter ||				 
 		                                          _ev->Flag_ecalBadCalibFilter);
 
-	    thisEvent->setTrigger(_ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL ||
-				  _ev->HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
-				  _ev->HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ||
+	    thisEvent->setTrigger(
 				  _ev->HLT_Ele32_WPTight_Gsf ||
 				  _ev->HLT_IsoMu24 ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ||
-				  _ev->HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8);
+				  _ev->HLT_Ele28_eta2p1_WPTight_Gsf_HT150 ||);
 	}
     }
     
