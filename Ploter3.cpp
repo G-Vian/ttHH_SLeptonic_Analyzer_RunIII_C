@@ -28,11 +28,19 @@ struct ProcessInfo {
     string legendName;
 };
 
+struct BinSettings {
+    bool useFixedBinCount;  // true = use fixed number of bins, false = use rebinFactor
+    int fixedBinCount;      // Desired number of bins (when useFixedBinCount = true)
+    int rebinFactor;        // Traditional rebin factor (when useFixedBinCount = false)
+};
+
 struct HistogramSetting {
     string typeOfHisto;
     string title;
     string xAxisTitle;
     string saveName;
+    pair<double, double> xRange; // x-axis range (min, max)
+    BinSettings binSettings;     // Binning configuration
 };
 
 const string plotExtension = ".png"; // save file extension
@@ -82,8 +90,11 @@ TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const Histo
         return nullptr;
     }
 
-    double xAxisRange_low = First_Stacked_histo->GetXaxis()->GetXmin();
-    double xAxisRange_high = First_Stacked_histo->GetXaxis()->GetXmax();
+    // Use the user-defined x-range if specified, otherwise use the histogram's range
+    double xAxisRange_low = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                           setting.xRange.first : First_Stacked_histo->GetXaxis()->GetXmin();
+    double xAxisRange_high = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                            setting.xRange.second : First_Stacked_histo->GetXaxis()->GetXmax();
 
     double maxVal = -std::numeric_limits<double>::max();
     double minVal = std::numeric_limits<double>::max();
@@ -102,12 +113,14 @@ TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const Histo
 
     // ratio histogram and its error
     for (int i = 1; i <= signal->GetNbinsX(); ++i) {
+        double x = signal->GetBinCenter(i);
+        // Skip bins outside the specified x-range
+        if (x < xAxisRange_low || x > xAxisRange_high) continue;
+
         double S = signal->GetBinContent(i);
         double B = sumHist->GetBinContent(i);
         double sigma_S = signal->GetBinError(i);
         double sigma_B = sumHist->GetBinError(i);
-
-        double x = signal->GetBinCenter(i);
 
         if (B > 0 && S > 0) {
             double R = S / B;
@@ -186,16 +199,39 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
             continue;
         }
 
-        if (histPair.second.isSignal) {
-            signalHist = hist;
+        TH1* processedHist = hist;
+        
+        // Apply rebinning according to settings
+        if (setting.binSettings.useFixedBinCount) {
+            // Fixed number of bins method
+            int originalBins = hist->GetNbinsX();
+            int rebinFactor = originalBins / setting.binSettings.fixedBinCount;
+            if (rebinFactor < 1) rebinFactor = 1;
+            
+            processedHist = (TH1*)hist->Rebin(rebinFactor, Form("%s_rebinned", hist->GetName()));
         } else {
-            hist->SetFillColor(histPair.second.color);
-            hist->SetLineColor(histPair.second.color);
-            stack->Add(hist);
+            // Traditional rebinning method
+            if (setting.binSettings.rebinFactor > 1) {
+                processedHist = (TH1*)hist->Rebin(setting.binSettings.rebinFactor, 
+                                                Form("%s_rebinned", hist->GetName()));
+            }
+        }
+
+        // Apply X-axis range if specified
+        if (setting.xRange.first != 0 || setting.xRange.second != 0) {
+            processedHist->GetXaxis()->SetRangeUser(setting.xRange.first, setting.xRange.second);
+        }
+
+        if (histPair.second.isSignal) {
+            signalHist = processedHist;
+        } else {
+            processedHist->SetFillColor(histPair.second.color);
+            processedHist->SetLineColor(histPair.second.color);
+            stack->Add(processedHist);
             cout << "Background histogram added to stack: " << histPair.second.legendName << endl;
         }
 
-        maxY = max(maxY, hist->GetMaximum());
+        maxY = max(maxY, processedHist->GetMaximum());
     }
 
     if (!signalHist) {
@@ -231,9 +267,13 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
     stack->SetMinimum(1e-6);
     stack->GetXaxis()->SetLabelSize(0);
 
-    // X-axis settings
-    double xAxisRange_low = stack->GetXaxis()->GetXmin();
-    double xAxisRange_high = stack->GetXaxis()->GetXmax();
+    // Use the user-defined x-range if specified, otherwise use the histogram's range
+    double xAxisRange_low = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                           setting.xRange.first : stack->GetXaxis()->GetXmin();
+    double xAxisRange_high = setting.xRange.first != 0 || setting.xRange.second != 0 ? 
+                            setting.xRange.second : stack->GetXaxis()->GetXmax();
+
+    // Set the x-axis range
     stack->GetXaxis()->SetLimits(xAxisRange_low, xAxisRange_high);
     stack->GetXaxis()->SetNdivisions(505);
     stack->GetXaxis()->SetTickLength(0.03);
@@ -250,48 +290,49 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
     TLatex latex;
     setLatexSetting(latex, setting.title);
 
-// Add colored squares with the color and name of each process in the top-right corner
-double xText = 0.85; // Horizontal position of the text
-double yText = 0.85; // Initial vertical position of the text (higher up)
-double yStep = 0.05; // Spacing between text lines (increased to create more space)
-double xStep = 0.15; // Horizontal spacing between processes in the same line
+    // Add colored squares with the color and name of each process in the top-right corner
+    double xText = 0.85; // Horizontal position of the text
+    double yText = 0.85; // Initial vertical position of the text (higher up)
+    double yStep = 0.05; // Spacing between text lines (increased to create more space)
+    double xStep = 0.15; // Horizontal spacing between processes in the same line
 
-int processCount = 0; // Counter to track the number of processes in the current line
+    int processCount = 0; // Counter to track the number of processes in the current line
 
-for (const auto& histPair : histograms) {
-    TH1* hist = histPair.first;
-    if (!hist) continue;
+    for (const auto& histPair : histograms) {
+        TH1* hist = histPair.first;
+        if (!hist) continue;
 
-    // Create a TPaveText for the colored square
-    double boxSize = 0.02; // Size of the square (height and width)
-    TPaveText* box = new TPaveText(xText - 0.06, yText - boxSize / 2, xText - 0.06 + boxSize, yText + boxSize / 2, "NDC");
-    box->SetFillColor(histPair.second.color); // Use the color defined in ProcessInfo
-    box->SetLineColor(kBlack); // Set the border color to black
-    box->SetBorderSize(1); // Border thickness
-    box->Draw();
+        // Create a TPaveText for the colored square
+        double boxSize = 0.02; // Size of the square (height and width)
+        TPaveText* box = new TPaveText(xText - 0.06, yText - boxSize / 2, xText - 0.06 + boxSize, yText + boxSize / 2, "NDC");
+        box->SetFillColor(histPair.second.color); // Use the color defined in ProcessInfo
+        box->SetLineColor(kBlack); // Set the border color to black
+        box->SetBorderSize(1); // Border thickness
+        box->Draw();
 
-    // Force pad update
-    gPad->Modified();
-    gPad->Update();
+        // Force pad update
+        gPad->Modified();
+        gPad->Update();
 
-    // Debug: Check if TPaveText was created and the color used
-    cout << "Process: " << histPair.second.legendName 
-         << ", Color: " << histPair.second.color 
-         << ", TPaveText created: " << (box ? "Yes" : "No") << endl;
+        // Debug: Check if TPaveText was created and the color used
+        cout << "Process: " << histPair.second.legendName 
+             << ", Color: " << histPair.second.color 
+             << ", TPaveText created: " << (box ? "Yes" : "No") << endl;
 
-    // Add the process name
-    latex.SetTextColor(kBlack);
-    latex.SetTextSize(0.025); // Font size
-    latex.DrawLatex(xText, yText, histPair.second.legendName.c_str());
+        // Add the process name
+        latex.SetTextColor(kBlack);
+        latex.SetTextSize(0.025); // Font size
+        latex.DrawLatex(xText, yText, histPair.second.legendName.c_str());
 
-    processCount++;
-    if (processCount % processesPerLine == 0) { // Start a new line after every N processes
-        yText -= yStep; // Move to the next line
-        xText = 0.85; // Reset horizontal position
-    } else {
-        xText -= xStep; // Move horizontally for the next process in the same line
+        processCount++;
+        if (processCount % processesPerLine == 0) { // Start a new line after every N processes
+            yText -= yStep; // Move to the next line
+            xText = 0.85; // Reset horizontal position
+        } else {
+            xText -= xStep; // Move horizontally for the next process in the same line
+        }
     }
-}
+
     // Draw lower pad
     lowerPad->cd();
     lowerPad->SetGrid(1, 1);
@@ -388,59 +429,61 @@ void Iteration_Directories_And_Histograms(const unordered_map<string, ProcessInf
 
 int Ploter3() {
     unordered_map<string, ProcessInfo> processes = {
-  {"TT_DL", {"TTHTobb.root", false, kMagenta, "TTH"}},
-         {"TT4b", {"TT4b.root", false, kGreen, "TT4b"}},
-         {"TTZH", {"TTZH.root", false, kBlue, "TTZH"}},
+        {"TT_DL", {"TTHTobb.root", false, kMagenta, "TTH"}},
+        {"TT4b", {"TT4b.root", false, kGreen, "TT4b"}},
+        {"TTZH", {"TTZH.root", false, kBlue, "TTZH"}},
         {"TTZZ", {"TTZZ.root", false, kRed, "TTZZ"}},
         {"ttHH", {"ttHH.root", true, kBlack, "ttHH"}},
         // Add other processes as needed
     };
 
-
+    // Define histogram settings with binning options
     unordered_map<string, vector<HistogramSetting>> histogramSettings = {
         {"Lepton", 
             {
-                {"lepCharge1", "Lepton Charge 1 Distribution", "Charge", "lepCharge1"},
-                {"lepCharge2", "Lepton Charge 2 Distribution", "Charge", "lepCharge2"},
-                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber"},
-                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber"},
-                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber"},
-                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1"},
-                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2"},
-                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1"},
-                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2"},
-                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT"}
+                // Format: {histName, title, xTitle, saveName, {xMin,xMax}, {useFixedBins, fixedBinCount, rebinFactor}}
+                {"lepCharge1", "Lepton Charge 1", "Charge", "lepCharge1", {0, 0}, {true, 10, 1}},
+                {"lepCharge2", "Lepton Charge 2", "Charge", "lepCharge2", {0, 0}, {true, 10, 1}},
+                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber", {0, 0}, {true, 5, 1}},
+                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber", {0, 0}, {true, 5, 1}},
+                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber", {0, 0}, {true, 5, 1}},
+                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1", {0, 500}, {true, 20, 1}},
+                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 500}, {true, 20, 1}},
+                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 500}, {true, 20, 1}},
+                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 500}, {true, 20, 1}},
+                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 1000}, {true, 25, 1}}
             }
         },
         {"jet", 
-        {
-            {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1"},
-            {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2"},
-            {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3"},
-            {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4"},
-            {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5"},
-            {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6"},
-            {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1"},
-            {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2"},
-            {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3"},
-            {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4"},
-            {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5"},
-            {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6"},
-            {"jetHT", "Jet HT", "HT [GeV]", "jetHT"},
-            {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT"},
-            {"met", "Missing ET", "ET [GeV]", "met"},
-            {"jetNumber", "Jet Number", "Number of Jets", "jetNumber"},
-            {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber"},
-            {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched"},
-            {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched"},
-            {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched"},
-            {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched"}
+            {
+                {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 500}, {true, 10, 1}},
+                {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 500}, {true, 5, 1}},
+                {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3", {0, 500}, {true, 2, 1}},
+                {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 500}, {true, 20, 1}},
+                {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 500}, {false, 0, 2}},
+                {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 500}, {false, 0, 2}},
+                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 500}, {true, 20, 1}},
+                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 500}, {true, 20, 1}},
+                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 500}, {true, 20, 1}},
+                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {false, 0, 2}},
+                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {false, 0, 2}},
+                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 500}, {false, 0, 2}},
+                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 30, 1}},
+                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 2000}, {true, 30, 1}},
+                {"met", "Missing ET", "ET [GeV]", "met", {0, 500}, {true, 25, 1}},
+                {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {true, 10, 1}},
+                {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {true, 10, 1}},
+                {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", {0, 1000}, {true, 25, 1}},
+                {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched", {0, 1000}, {true, 25, 1}}
+            }
         }
-    },
-};
+    };
 
     Iteration_Directories_And_Histograms(processes, histogramSettings);
     return 0;
 }
-
+// to run use 
+// root -l -b -q Ploter3.cpp
 // // to run use: cmssw-el7  cmsenv  root -l -b -q Ploter3.cpp
