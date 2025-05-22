@@ -115,9 +115,8 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 		                                          _ev->Flag_ecalBadCalibFilter);
 
 	    thisEvent->setTrigger(
-				  _ev->HLT_Ele32_WPTight_Gsf ||
-				  _ev->HLT_IsoMu24 ||
-				  _ev->HLT_Ele28_eta2p1_WPTight_Gsf_HT150 );
+				  _ev->HLT_Ele30_WPTight_Gsf ||
+				  _ev->HLT_IsoMu24);
 	}
     }
     
