@@ -71,7 +71,7 @@ void setLatexSetting(TLatex& histoLatex, const string& histo_title) {
 
     histoLatex.SetTextSize(0.04);
     histoLatex.SetTextAlign(31); // Align to the right
-    histoLatex.DrawLatex(0.9, 0.945, "2023 year, 18 fb^{-1} [13.6 TeV]");
+    histoLatex.DrawLatex(0.9, 0.945, "2022 year, 7.98 fb^{-1} [13.6 TeV]");
 
     histoLatex.SetTextSize(0.04);
     histoLatex.SetTextAlign(11);
@@ -79,7 +79,7 @@ void setLatexSetting(TLatex& histoLatex, const string& histo_title) {
     histoLatex.DrawLatex(0.13, 0.92, title.c_str());
 }
 
-TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const HistogramSetting& setting, double maxRatioLimit = 1.0) {
+TGraphAsymmErrors* CreateRatioPlot(TH1* signal, THStack* background, const HistogramSetting& setting, double maxRatioLimit = 1.5) {
     if (!signal || !background) {
         cerr << "Error: Signal or background is null while creating the ratio plot." << endl;
         return nullptr;
@@ -452,41 +452,41 @@ int Ploter_Norm() {
         {"Lepton", 
             {
                 // Format: {histName, title, xTitle, saveName, {xMin,xMax}, {useFixedBins, fixedBinCount, rebinFactor}}
-                {"lepCharge1", "Lepton Charge 1", "Charge", "lepCharge1", {0, 0}, {true, 10, 1}},
-                {"lepCharge2", "Lepton Charge 2", "Charge", "lepCharge2", {0, 0}, {true, 10, 1}},
-                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber", {0, 0}, {true, 5, 1}},
-                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber", {0, 0}, {true, 5, 1}},
-                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber", {0, 0}, {true, 5, 1}},
-                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1", {0, 500}, {true, 20, 1}},
-                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 300}, {true, 15, 1}},
-                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 500}, {true, 20, 1}},
-                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 300}, {true, 15, 1}},
-                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 1000}, {true, 25, 1}}
+                {"lepCharge1", "Lepton Charge 1", "Charge", "lepCharge1", {0, 0}, {false, 10, 1}},
+                {"lepCharge2", "Lepton Charge 2", "Charge", "lepCharge2", {0, 0}, {false, 10, 1}},
+                {"LepNumber", "Lepton Number", "Number of Leptons", "LepNumber", {0, 0}, {false, 5, 1}},
+                {"ElecNumber", "Electron Number", "Number of Electrons", "ElecNumber", {0, 0}, {false, 10, 1}},
+                {"MuonNumber", "Muon Number", "Number of Muons", "MuonNumber", {0, 0}, {false, 5, 1}},
+                {"elePT1", "Electron PT 1", "pT [GeV]", "elePT1", {0, 800}, {true, 10, 1}},
+                {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 300}, {true, 10, 1}},
+                {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 800}, {true, 10, 1}},
+                {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 300}, {true, 10, 1}},
+                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {true, 10, 1}}
             }
         },
         {"jet", 
             {
-                {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 800}, {true, 20, 1}},
-                {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 600}, {true, 20, 1}},
-                {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3", {0, 400}, {true, 20, 1}},
-                {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 300}, {true, 15, 1}},
-                {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 200}, {false, 0, 2}},
-                {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 150}, {false, 0, 2}},
-                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 500}, {true, 20, 1}},
-                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 300}, {true, 15, 1}},
-                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 200}, {false, 0, 2}},
-                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 150}, {false, 0, 2}},
-                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 100}, {false, 0, 2}},
-                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 80}, {false, 0, 2}},
+                {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 1500}, {true, 10, 1}},
+                {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 1500}, {true, 10, 1}},
+                {"jetPT3", "Jet PT 3", "pT [GeV]", "jetPT3", {0, 1000}, {true, 10, 1}},
+                {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 500}, {true, 10, 1}},
+                {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 500}, {true, 10, 1}},
+                {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 400}, {true, 10, 1}},
+                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 1500}, {true, 10, 1}},
+                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 1500}, {true, 10, 1}},
+                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 1000}, {true, 10, 1}},
+                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {true, 10, 1}},
+                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {true, 10, 1}},
+                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {true, 10, 1}},
                 {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 30, 1}},
                 {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 25, 1}},
-                {"met", "Missing ET", "ET [GeV]", "met", {0, 500}, {true, 25, 1}},
+                {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {true, 10, 1}},
                 {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {true, 10, 1}},
                 {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {true, 10, 1}},
-                {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 1000}, {true, 25, 1}},
-                {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", {0, 1000}, {true, 25, 1}},
-                {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", {0, 1000}, {true, 25, 1}},
-                {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched", {0, 1000}, {true, 25, 1}}
+                {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 500}, {true, 10, 1}},
+                {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", {0, 500}, {true, 10, 1}},
+                {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", {0, 500}, {true, 10, 1}},
+                {"invMass_HH2NotMatched", "Invariant Mass HH2 Not Matched", "Mass [GeV]", "invMass_HH2NotMatched", {0, 500}, {true, 10, 1}}
             }
         }
     };
