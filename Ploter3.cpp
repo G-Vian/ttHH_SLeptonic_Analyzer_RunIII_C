@@ -429,12 +429,13 @@ void Iteration_Directories_And_Histograms(const unordered_map<string, ProcessInf
 
 int Ploter3() {
     unordered_map<string, ProcessInfo> processes = {
-        {"TT_DL", {"TTHTobb.root", false, kMagenta, "TTH"}},
+{"TTSL", {"TTSL.root", false, kOrange, "TTSL"}},
+        {"TTZ", {"TTZ.root", false, kCyan, "TTZ"}},
+        {"TTH", {"TTHTobb.root", false, kMagenta, "TTH"}},
         {"TT4b", {"TT4b.root", false, kGreen, "TT4b"}},
         {"TTZH", {"TTZH.root", false, kBlue, "TTZH"}},
         {"TTZZ", {"TTZZ.root", false, kRed, "TTZZ"}},
         {"ttHH", {"ttHH.root", true, kBlack, "ttHH"}},
-        // Add other processes as needed
     };
 
     // Define histogram settings with binning options
