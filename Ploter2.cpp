@@ -452,7 +452,7 @@ int Ploter2() {
                 {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {true, 10, 1}}
             }
         },
-        {"jet", 
+              {"jet", 
             {
                 {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 1500}, {true, 10, 1}},
                 {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 1500}, {true, 10, 1}},
@@ -466,11 +466,11 @@ int Ploter2() {
                 {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {true, 10, 1}},
                 {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {true, 10, 1}},
                 {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {true, 10, 1}},
-                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 30, 1}},
-                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 25, 1}},
+                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 10, 1}},
+                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 10, 1}},
                 {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {true, 10, 1}},
-                {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {true, 10, 1}},
-                {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {true, 10, 1}},
+                {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {false, 10, 1}},
+                {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {false, 10, 1}},
                 {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 500}, {true, 10, 1}},
                 {"invMass_HH2Matched", "Invariant Mass HH2 Matched", "Mass [GeV]", "invMass_HH2Matched", {0, 500}, {true, 10, 1}},
                 {"invMass_HH1NotMatched", "Invariant Mass HH1 Not Matched", "Mass [GeV]", "invMass_HH1NotMatched", {0, 500}, {true, 10, 1}},
