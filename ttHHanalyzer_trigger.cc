@@ -310,7 +310,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["noCut"]+=1;
     hCutFlow->Fill("noCut",1);
     hCutFlow_w->Fill("noCut",_weight);
-
+//Checks if the event was accepted by the triggers
     if(cut["trigger"] > 0 && thisEvent->getTriggerAccept() == false){
 	return false;
     }
@@ -319,7 +319,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow->Fill("nTrigger",1);
     hCutFlow_w->Fill("nTrigger",_weight);
 	
-
+//Checks if the event passes the filters
     if(cut["filter"] > 0 && thisEvent->getMETFilter() == false){
 	return false;
     }
@@ -327,7 +327,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["nFilter"]+=1;
     hCutFlow->Fill("nFilter",1);
     hCutFlow_w->Fill("nFilter",_weight);
-
+//Checks if the event has a valid primary vertex 
     if(cut["pv"] < 0 && thisEvent->getPVvalue() == false){
 	return false;
     } 
