@@ -713,11 +713,13 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 	//	hCutFlow->SetBinContent(1, cutflow[0]);
     //    }
     
-    int i = 0; 
+    int i = 1; 
     for (const auto& x : cutflow){
 	hCutFlow->SetBinContent(i, x.second);
 	i++;
     }
+
+
 
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelbJets(), jbjetCent);
     thisEvent->getCentrality(thisEvent->getSelJets(), thisEvent->getSelLeptons(), jlepCent);
