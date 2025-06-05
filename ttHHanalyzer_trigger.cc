@@ -100,7 +100,10 @@ void ttHHanalyzer::loop(sysName sysType, bool up) {
 }
 
 void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
-
+cutflow["noCut"]+=1;
+hCutFlow->Fill("noCut",1);
+hCutFlow_w->Fill("noCut",_weight);
+	
     _ev->fillObjects();
 
 // This trigger paths are for the SL channel!
@@ -307,9 +310,9 @@ void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
 bool ttHHanalyzer::selectObjects(event *thisEvent){
     //    std::cout << "bjet CSV: " << thisEvent->getSelbJets()->at(0)->bTagCSV << std::endl;
 	
-    cutflow["noCut"]+=1;
-    hCutFlow->Fill("noCut",1);
-    hCutFlow_w->Fill("noCut",_weight);
+//    cutflow["noCut"]+=1;
+//    hCutFlow->Fill("noCut",1);
+//    hCutFlow_w->Fill("noCut",_weight);
 //Checks if the event was accepted by the triggers
     if(cut["trigger"] > 0 && thisEvent->getTriggerAccept() == false){
 	return false;
