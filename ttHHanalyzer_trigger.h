@@ -145,6 +145,9 @@ class objectJet:public objectPhysics {
     static constexpr float valbTagTight2023B  = 0.7994; //23Bpix
     static constexpr float valbTagMedium2023B = 0.3494; 
     static constexpr float valbTagLoose2023B  = 0.0683; 
+    static constexpr float valbTagTight2024  = 0.8482; //24 (wrong values, update them)
+    static constexpr float valbTagMedium2024 = 0.4319; 
+    static constexpr float valbTagLoose2024  = 0.0849; 
     float valbTagTight;
     float valbTagMedium;
     float valbTagLoose;
@@ -162,6 +165,8 @@ float getValbTagTight(const std::string& year) {
         return valbTagTight2023B;
     } else if (year == "2023") {
         return valbTagTight2023;
+    }  else if (year == "2024") {
+        return valbTagTight2024;
     }
     return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
@@ -179,6 +184,8 @@ float getValbTagMedium(const std::string& year) {
         return valbTagMedium2023B;
     } else if (year == "2023") {
         return valbTagMedium2023;
+    } else if (year == "2024") {
+        return valbTagMedium2024;
     }
     return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
@@ -196,6 +203,8 @@ float getValbTagLoose(const std::string& year) {
         return valbTagLoose2023B;
     } else if (year == "2023") {
         return valbTagLoose2023;
+    }else if (year == "2024") {
+        return valbTagLoose2024;
     }
     return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
