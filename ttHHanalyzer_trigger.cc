@@ -462,9 +462,9 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
 /////////////////////////////
     cutflow["MET>20"]+=1; 
 
-    cutflow["nTotal"]+=1;
-    hCutFlow->Fill("nTotal",1);
-    hCutFlow_w->Fill("nTotal",_weight);
+    cutflow["MET>20"]+=1;
+    hCutFlow->Fill("MET>20",1);
+    hCutFlow_w->Fill("MET>20",_weight);
 
     /*	std::cout << x.first  // string (key)
 		  << ':' 
