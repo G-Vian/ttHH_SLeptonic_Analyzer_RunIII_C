@@ -339,15 +339,6 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     hCutFlow->Fill("nPV",1);
     hCutFlow_w->Fill("nPV",_weight);
 
-    //inverted the order, originally was nleptons cut after njets cut
-    if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
-	return false;
-    }
-    
-    cutflow["nlepton==1"]+=1;
-    hCutFlow->Fill("nlepton==1",1);
-    hCutFlow_w->Fill("nlepton==1",_weight);
-	
 
 	
     if(!(thisEvent->getnSelJet()  >=  cut["nJets"] )){
@@ -366,7 +357,17 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["nbjets>4"]+=1;
     hCutFlow->Fill("nbjets>4",1);
     hCutFlow_w->Fill("nbjets>4",_weight);
-  
+   
+    if(!(thisEvent->getnSelLepton() == cut["nLeptons"])){
+	return false;
+    }
+    
+    cutflow["nlepton==1"]+=1;
+    hCutFlow->Fill("nlepton==1",1);
+    hCutFlow_w->Fill("nlepton==1",_weight);
+	
+
+	
 
 
     thisEvent->getStatsComb(thisEvent->getSelJets(), thisEvent->getSelLeptons(), ljetStat);
