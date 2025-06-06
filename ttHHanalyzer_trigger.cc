@@ -467,7 +467,6 @@ else if (thisEvent->getSelElectrons()->size() == 1 && thisEvent->getSelMuons()->
         return false;
     	}
 /////////////////////////////
-    cutflow["MET>20"]+=1; 
 
     cutflow["MET>20"]+=1;
     hCutFlow->Fill("MET>20",1);
