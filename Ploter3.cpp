@@ -440,6 +440,14 @@ int Ploter3() {
 
     // Define histogram settings with binning options
    unordered_map<string, vector<HistogramSetting>> histogramSettings = {
+
+      {"Tree", 
+            {
+                // Format: {histName, title, xTitle, saveName, {xMin,xMax}, {useFixedBins, fixedBinCount, rebinFactor}}
+                {"cutflow", "Cutflow", "Cuts", "cutflow", {0, 0}, {false, 10, 1}},
+                {"cutflow_w", "Cutflow Weighted", "Cuts", "cutflow_w", {0, 0}, {false, 10, 1}}          
+            }
+        },
         {"Lepton", 
             {
                 // Format: {histName, title, xTitle, saveName, {xMin,xMax}, {useFixedBins, fixedBinCount, rebinFactor}}
