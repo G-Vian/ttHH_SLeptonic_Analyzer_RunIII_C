@@ -47,6 +47,7 @@ dasgoclient --query="file dataset=/TT4B_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2
 dasgoclient --query="file dataset=/TTZH-ZHto4B_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM" | sed 's|^|root://xrootd-cms.infn.it//|' >> full_TTZH_24.txt
 dasgoclient --query="file dataset=/TTZZ-ZZto4B_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v3/NANOAODSIM" | sed 's|^|root://xrootd-cms.infn.it//|' >> full_TTZZ_24.txt
 dasgoclient --query="file dataset=/TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM" | sed 's|^|root://xrootd-cms.infn.it//|' >> full_TTSL_24.txt
+dasgoclient --query="file dataset=/ttHto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Winter24NanoAOD-133X_mcRun3_2024_realistic_v8-v2/NANOAODSIM" | sed 's|^|root://xrootd-cms.infn.it//|' >> full_TTH_24.txt
 
 
 
