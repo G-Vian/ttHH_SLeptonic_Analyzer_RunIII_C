@@ -276,7 +276,7 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
     stack->GetXaxis()->SetTitle(setting.xAxisTitle.c_str());
     stack->GetYaxis()->SetTitle("#bf{Normalized Events / bin}");
     stack->SetMaximum(maxY * 10.0);
-    stack->SetMinimum(1e-4);
+    stack->SetMinimum(1e-3);
     stack->GetXaxis()->SetLabelSize(0);
 
     // Use the user-defined x-range if specified, otherwise use the histogram's range
