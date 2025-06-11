@@ -218,7 +218,7 @@ hCutFlow_w->Fill("noCut",_weight);
     float dR = 0., deltaEta = 0., deltaPhi = 0.;
     for(int i=0; i < jet.size(); i++){
        	currentJet = new objectJet(jet[i].pt, jet[i].eta, jet[i].phi, jet[i].mass);
-	currentJet->bTagCSV = jet[i].Jet_btagPNetB;
+	currentJet->bTagCSV = jet[i].btagPNetB;
 	currentJet->jetID = jet[i].jetId;
 	currentJet->jetPUid = jet[i].puId;
 	if(_sys && sysType == kJES){
