@@ -71,7 +71,7 @@ void setLatexSetting(TLatex& histoLatex, const string& histo_title) {
 
     histoLatex.SetTextSize(0.04);
     histoLatex.SetTextAlign(31); // Align to the right
-    histoLatex.DrawLatex(0.9, 0.945, "2022 year, 7.98 fb^{-1} [13.6 TeV]");
+    histoLatex.DrawLatex(0.9, 0.945, "2024 year, 108.96 fb^{-1} [13.6 TeV]");
 
     histoLatex.SetTextSize(0.04);
     histoLatex.SetTextAlign(11);
@@ -468,10 +468,10 @@ int Ploter_Norm() {
                 {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 300}, {true, 10, 1}},
                 {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 800}, {true, 10, 1}},
                 {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 300}, {true, 10, 1}},
-                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {true, 10, 1}}
+                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {false, 10, 1}}
             }
         },
-        {"jet", 
+              {"jet", 
             {
                 {"jetPT1", "Jet PT 1", "pT [GeV]", "jetPT1", {0, 1500}, {true, 10, 1}},
                 {"jetPT2", "Jet PT 2", "pT [GeV]", "jetPT2", {0, 1500}, {true, 10, 1}},
@@ -479,15 +479,15 @@ int Ploter_Norm() {
                 {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 500}, {true, 10, 1}},
                 {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 500}, {true, 10, 1}},
                 {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 400}, {true, 10, 1}},
-                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 1500}, {true, 10, 1}},
-                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 1500}, {true, 10, 1}},
-                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 1000}, {true, 10, 1}},
-                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {true, 10, 1}},
-                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {true, 10, 1}},
-                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {true, 10, 1}},
-                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 10, 1}},
-                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 10, 1}},
-                {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {true, 10, 1}},
+                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 1500}, {false, 10, 1}},
+                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 1500}, {false, 10, 1}},
+                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 1000}, {false, 10, 1}},
+                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {false, 10, 1}},
+                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {false, 10, 1}},
+                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {false, 10, 1}},
+                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {false, 10, 1}},
+                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 2000}, {false, 10, 1}},
+                {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {false, 10, 1}},
                 {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {false, 10, 1}},
                 {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {false, 10, 1}},
                 {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 500}, {true, 10, 1}},
