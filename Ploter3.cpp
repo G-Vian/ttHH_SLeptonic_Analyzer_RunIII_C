@@ -264,7 +264,7 @@ void DrawStackedHistograms(const vector<pair<TH1*, ProcessInfo>>& histograms, co
     stack->GetXaxis()->SetTitle(setting.xAxisTitle.c_str());
     stack->GetYaxis()->SetTitle("#bf{# of Events / bin}");
     stack->SetMaximum(maxY * 10.0);
-    stack->SetMinimum(1e-3);
+    stack->SetMinimum(1e-4);
     stack->GetXaxis()->SetLabelSize(0);
 
     // Use the user-defined x-range if specified, otherwise use the histogram's range
@@ -461,7 +461,7 @@ int Ploter3() {
                 {"elePT2", "Electron PT 2", "pT [GeV]", "elePT2", {0, 300}, {true, 10, 1}},
                 {"muonPT1", "Muon PT 1", "pT [GeV]", "muonPT1", {0, 800}, {true, 10, 1}},
                 {"muonPT2", "Muon PT 2", "pT [GeV]", "muonPT2", {0, 300}, {true, 10, 1}},
-                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {true, 10, 1}}
+                {"leptonHT", "Lepton HT", "HT [GeV]", "leptonHT", {0, 3500}, {false, 10, 1}}
             }
         },
               {"jet", 
@@ -472,15 +472,15 @@ int Ploter3() {
                 {"jetPT4", "Jet PT 4", "pT [GeV]", "jetPT4", {0, 500}, {true, 10, 1}},
                 {"jetPT5", "Jet PT 5", "pT [GeV]", "jetPT5", {0, 500}, {true, 10, 1}},
                 {"jetPT6", "Jet PT 6", "pT [GeV]", "jetPT6", {0, 400}, {true, 10, 1}},
-                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 1500}, {true, 10, 1}},
-                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 1500}, {true, 10, 1}},
-                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 1000}, {true, 10, 1}},
-                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {true, 10, 1}},
-                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {true, 10, 1}},
-                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {true, 10, 1}},
-                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {true, 10, 1}},
-                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 1000}, {true, 10, 1}},
-                {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {true, 10, 1}},
+                {"bjetPT1", "B-Jet PT 1", "pT [GeV]", "bjetPT1", {0, 1500}, {false, 10, 1}},
+                {"bjetPT2", "B-Jet PT 2", "pT [GeV]", "bjetPT2", {0, 1500}, {false, 10, 1}},
+                {"bjetPT3", "B-Jet PT 3", "pT [GeV]", "bjetPT3", {0, 1000}, {false, 10, 1}},
+                {"bjetPT4", "B-Jet PT 4", "pT [GeV]", "bjetPT4", {0, 500}, {false, 10, 1}},
+                {"bjetPT5", "B-Jet PT 5", "pT [GeV]", "bjetPT5", {0, 500}, {false, 10, 1}},
+                {"bjetPT6", "B-Jet PT 6", "pT [GeV]", "bjetPT6", {0, 300}, {false, 10, 1}},
+                {"jetHT", "Jet HT", "HT [GeV]", "jetHT", {0, 2000}, {false, 10, 1}},
+                {"jetBHT", "B-Jet HT", "HT [GeV]", "jetBHT", {0, 2000}, {false, 10, 1}},
+                {"met", "Missing ET", "ET [GeV]", "met", {0, 1000}, {false, 10, 1}},
                 {"jetNumber", "Jet Number", "Number of Jets", "jetNumber", {0, 0}, {false, 10, 1}},
                 {"jetBNumber", "B-Jet Number", "Number of B-Jets", "jetBNumber", {0, 0}, {false, 10, 1}},
                 {"invMass_HH1Matched", "Invariant Mass HH1 Matched", "Mass [GeV]", "invMass_HH1Matched", {0, 500}, {true, 10, 1}},
@@ -490,7 +490,6 @@ int Ploter3() {
             }
         }
     };
-
     Iteration_Directories_And_Histograms(processes, histogramSettings);
     return 0;
 }
