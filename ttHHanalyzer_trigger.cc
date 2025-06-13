@@ -422,7 +422,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	    if (thisEvent->getSelElectrons()->at(0)->getp4()->Pt() >= cut["leadElePt"] &&
 	        fabs(thisEvent->getSelElectrons()->at(0)->getp4()->Eta()) <= cut["eleEta"] ) {
 	        
-		cutflow["count_elec"]+=1;	        
+	//	cutflow["count_elec"]+=1;	        
 	    } else {
 	        return false;
 	    }
@@ -432,7 +432,7 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
 	    if (thisEvent->getSelMuons()->at(0)->getp4()->Pt() >= cut["leadMuonPt"] &&
 	        fabs(thisEvent->getSelMuons()->at(0)->getp4()->Eta()) <= cut["muonEta"] ) {
 	            
-		cutflow["count_muon"]+=1;	        
+	///	cutflow["count_muon"]+=1;	        
 	    } else {
 	        return false;
 	    }
