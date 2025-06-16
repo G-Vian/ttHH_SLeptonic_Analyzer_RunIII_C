@@ -323,15 +323,14 @@ bool ttHHanalyzer::selectObjects(event *thisEvent){
     cutflow["nTrigger"]+=1;
     hCutFlow->Fill("nTrigger",1);
     hCutFlow_w->Fill("nTrigger",_weight);
-// temporarily removed for nanoaod v15 test	
 //Checks if the event passes the filters
-//    if(cut["filter"] > 0 && thisEvent->getMETFilter() == false){
-//	return false;
-//    }
+    if(cut["filter"] > 0 && thisEvent->getMETFilter() == false){
+	return false;
+    }
 
-//    cutflow["nFilter"]+=1;
-//    hCutFlow->Fill("nFilter",1);
-//    hCutFlow_w->Fill("nFilter",_weight);
+    cutflow["nFilter"]+=1;
+    hCutFlow->Fill("nFilter",1);
+    hCutFlow_w->Fill("nFilter",_weight);
 //Checks if the event has a valid primary vertex 
     if(cut["pv"] < 0 && thisEvent->getPVvalue() == false){
 	return false;
