@@ -10,7 +10,7 @@
 
 # Configuration
 SOURCE_BASE="/eos/user/g/gvian/job"
-DEST_DIR="/afs/cern.ch/user/g/gvian/CMSSW_10_6_28/src/2024/ttHH_SLeptonic_Analyzer_RunIII"
+DEST_DIR="$(pwd)"
 
 # Initialize tracking variables
 declare -A FILE_COUNTS
