@@ -117,11 +117,11 @@ hCutFlow_w->Fill("noCut",_weight);
 		                        		  _ev->Flag_eeBadScFilter ||				 
 		                                          _ev->Flag_ecalBadCalibFilter);
 // temporarily removed for nanoaod v15 test
-	    thisEvent->setTrigger(true);
+//	    thisEvent->setTrigger(true);
 
-//	    thisEvent->setTrigger(
-//				  _ev->HLT_Ele30_WPTight_Gsf ||
-//				  _ev->HLT_IsoMu24);
+	    thisEvent->setTrigger(
+				  _ev->HLT_Ele30_WPTight_Gsf ||
+				  _ev->HLT_IsoMu24);
 	}
     }
     
