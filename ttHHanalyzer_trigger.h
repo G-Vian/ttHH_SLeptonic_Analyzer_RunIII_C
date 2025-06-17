@@ -16,11 +16,13 @@
 #include <unordered_map>
 //#include "thhHypothesisCombinatorics.h"
 //#include "HypothesisCombinatorics.h"
-#include "include/tthHypothesisCombinatorics.h"
-#include "include/HypothesisCombinatorics.h"
+//#include "include/tthHypothesisCombinatorics.h" // 🔧 Why exclude this?
+//#include "include/HypothesisCombinatorics.h" //  🔧 Why exclude this?
 #include "fifo_map.hpp"
 //using namespace ROOT::Math;
+#include <nlohmann/json.hpp>  //🔧
 using nlohmann::fifo_map;
+using namespace std; //🔧
 
 const float cLargeValue = 99999999999.;
 const float cEps = 0.000000001; 
@@ -126,6 +128,8 @@ class objectJet:public objectPhysics {
     float matchedtoHiggsdR = 0.;
     //int bTag;
     float bTagCSV, jetID, jetPUid;
+    int hadFlav, partonFlav;  //🔧
+
     static constexpr float valbTagTight2017  = 0.7476;
     static constexpr float valbTagMedium2017 = 0.3040;
     static constexpr float valbTagLoose2017  = 0.0532;
@@ -230,7 +234,21 @@ float getValbTagLoose(const std::string& year) {
     }
     return -1.0f;  // Valor padrão se o ano não for reconhecido
 }
+
+    // new members for JEC/JER validation   //🔧
+    float  origPt       = 0.;
+    float  rawPt        = 0.;   // uncorrected jet pT
+    float  rawMass      = 0.;
+    float  jecSF        = 1.;   // JEC scale factor
+    float  ptJEC        = 0.;   // after applying JEC
+    float  jerSF        = 1.;   // JER scale factor (or ptJER/ptJEC)
+    float  ptJER        = 0.;   // after applying JER
+    float  genMatchedPt = -1.;  // matched gen-jet pT, or -1
+
 };
+
+
+
 
 class objectMET:public objectPhysics {
  public:
@@ -943,7 +961,19 @@ class ttHHanalyzer {
 	_year= year;
 	_DataOrMC = DataOrMC;
 	_sampleName = sampleName;
+	_era = era; //🔧
 
+        std::string yearForCorr = ""; //🔧
+	bool isData = false; //🔧
+        if(_runYear == "2017") yearForCorr = "2017_UL"; //🔧 why 2017? 
+	if(_DataOrMC == "Data") isData = true; //🔧
+        corrMgr = new CorrectionsManager(yearForCorr, _era, isData); //🔧
+
+	debugCorrections = debug; //🔧
+
+
+
+	    
 	initHistograms();	
 	initTree();
 	initSys();
@@ -960,6 +990,8 @@ class ttHHanalyzer {
     void writeHistos();
     void fillTree(event * thisevent);
     void writeTree();
+    std::vector<TH1D*> h_origPt, h_JECPt, h_smearedPt; //🔧
+
     TH1F * hmet,* hmetPhi, *hmetEta, *hAvgDeltaRjj, *hAvgDeltaRbb,*hAvgDeltaRbj, *hAvgDeltaEtajj, *hAvgDeltaEtabb, *hAvgDeltaEtabj, *hminDeltaRjj, *hminDeltaRbb, *hminDeltaRbj,  *hminDeltaRpTjj, *hminDeltaRpTbb, *hminDeltaRpTbj, *hminDeltaRMassjj, *hminDeltaRMassbb,*hminDeltaRMassbj, *hmaxDeltaEtajj, *hmaxDeltaEtabb, *hmaxDeltaEtabj, *hmaxPTmassjbb, *hmaxPTmassjjj, *hjetAverageMass, *hBjetAverageMass, *hHadronicHiggsAverageMass, *hLightJetAverageMass, *hBjetAverageMassSqr, *hHadronicHiggsSoftDropMass1, *hHadronicHiggsSoftDropMass2, *hjetHT, *hBjetHT, *hHadronicHiggsHT, *hLightJetHT, *hjetNumber, *hBjetNumber, *hHadronicHiggsNumber, *hLightJetNumber, *hInvMassHadW, *hInvMassZ1, *hInvMassZ2,*hInvMassHSingleMatched,*hInvMassHSingleNotMatched ,*hChi2HiggsSingleNotMatched, *hChi2HiggsSingleMatched , *hInvMassH1, *hInvMassH2,*hInvMassHZ1, *hInvMassHZ2, *hInvMassH1mChi, *hInvMassH2mChi,*hPTH1, *hPTH2, *hChi2Higgs, *hChi2HiggsZ, *hChi2HadW, *hChi2Z, *hAplanarity, *hSphericity, *hTransSphericity, *hCvalue, *hDvalue, *hBjetAplanarity, *hBjetSphericity, *hBjetTransSphericity ,*hBjetCvalue, *hBjetDvalue, *hCentralityjl, *hCentralityjb, *hleptonNumber,  *hElecNumber, *hMuonNumber, *hLeptonPT1, *hMuonPT1, *hElePT1, *hLeptonPhi1, *hMuonPhi1, *hElePhi1, *hLeptonEta1, *hMuonEta1, *hEleEta1, *hLeptonPT2, *hMuonPT2, *hElePT2, *hLeptonPhi2, *hMuonPhi2, *hElePhi2, *hLeptonEta2, *hMuonEta2, *hEleEta2, *hLepCharge1, *hLepCharge2, *hleptonHT, *hST, *hDiMuonMass, *hDiElectronMass, *hDiMuonPT, *hDiElectronPT, *hDiMuonEta, *hDiElectronEta, *hH0, *hH1, *hH2, *hH3, *hH4, *hR1, *hR2, * hR3, *hR4, *hBjetH0, *hBjetH1, *hBjetH2, *hBjetH3, *hBjetH4, *hBjetR1, *hBjetR2, * hBjetR3, *hBjetR4, *hCutFlow, *hCutFlow_w,
 	*hInvMassHH1Matched,
 	*hInvMassHH1NotMatched,
@@ -969,7 +1001,7 @@ class ttHHanalyzer {
         *hChi2HHMatched;
 
 
-    tthHypothesisCombinatorics * HypoComb; 
+   // tthHypothesisCombinatorics * HypoComb;  //🔧
 
 
     //fifo_map<std::string,int> cutflow{{"noCut", 0}, {"nlepton==2", 0}, {"nOpositeChargedLep", 0}, {"nMassCut", 0}, {"MET>40", 0}};
@@ -985,14 +1017,14 @@ class ttHHanalyzer {
  private: 
     bool _sys;
     float _weight;
-//    int _year;
-//    std::string _data;
-//    std::string _sample;
-    std::string _DataOrMC, _year, _sampleName; 
+    float _SampleWeight;  //🔧
+    float _PUWeight;  //🔧
+    float _L1PrefiringWeight;  //🔧
+    std::string _DataOrMC, _year, _sampleName, _era;  //🔧
     TH1D * _hJES, * _hbJES, *_hbJetEff, *_hJetEff, *_hSysbTagM ;
-    TString _pathJES = "HL_YR_JEC.root";
-    TString _nameJES = "TOTAL_DIJET_AntiKt4EMTopo_YR2018";
-    TString _namebJES = "TOTAL_BJES_AntiKt4EMTopo_YR2018";
+ //   TString _pathJES = "HL_YR_JEC.root"; //🔧
+ //   TString _nameJES = "TOTAL_DIJET_AntiKt4EMTopo_YR2018"; //🔧
+ //   TString _namebJES = "TOTAL_BJES_AntiKt4EMTopo_YR2018"; //🔧
     static const int nHistsJets = 8;
     static const int nHistsbJets = 6;
     static const int nHistsLightJets = 6;
@@ -1003,6 +1035,12 @@ class ttHHanalyzer {
     event::foxWolframObjects jetFoxWolfMom, bjetFoxWolfMom;
     std::string _cl;
     eventBuffer * _ev;
+
+    // For corrections////////////////
+    CorrectionsManager *corrMgr;        //🔧
+    bool debugCorrections;               //🔧
+    //////////////////////////////////
+
     std::vector<event*> events;
     outputFile * _of;
     float _bbMassMinSHiggsNotMatched, _bbMassMinSHiggsMatched, _minChi2SHiggsNotMatched = 999999999. , _minChi2SHiggsMatched = 999999999.; 
@@ -1013,6 +1051,20 @@ class ttHHanalyzer {
     float _bbMassMin1HiggsZ, _bbMassMin2HiggsZ, _minChi2HiggsZ = 999999999.;
     float _bbMassMin1Z, _bbMassMin2Z, _minChi2Z = 999999999.;
     TRandom3 _rand;
+
+   // L1 prefiring 
+    const correction::Correction *prefireJetCorr = nullptr; //🔧
+    const correction::Correction *prefirePhotonCorr = nullptr; //🔧
+    // JER 
+    const correction::Correction *jerResCorr = nullptr; //🔧
+    const correction::Correction *jerSFCorr = nullptr; //🔧
+   
+    // Golden JSON
+    static bool goldenLoaded; //🔧
+    static std::map<int,std::vector<std::pair<int,int>>> goldenLumiList; //🔧
+
+
+
 
 
     void diMotherReco(const TLorentzVector & dPar1p4,const TLorentzVector & dPar2p4,const TLorentzVector & dPar3p4,const TLorentzVector & dPar4p4, const float mother1mass, const float  mother2mass, float & _minChi2,float & _bbMassMin1, float & _bbMassMin2);
@@ -1152,7 +1204,31 @@ class ttHHanalyzer {
 	hmetPhi = new TH1F("metPhi"+trail, "MET #phi"+trail, 50, -5, 5);
 	hmetEta = new TH1F("metEta"+trail, "MET #eta"+trail, 50, -5, 5);
 
+	const int nBins = 50; //from here  🔧
+	const std::pair<float, float> etaRange = {-3.2, 3.2};
+	const std::array<float , 8> MaxJetPtRanges = { 3000.0, 2000.0, 1200.0, 900.0, 600.0, 500.0, 400.0, 300.0 };
+	for(int i=0; i < nHistsJets; i++){
 
+            float MaxJetPtRange = MaxJetPtRanges[std::min(i, 7)]; 0.0
+	
+            h_origPt.push_back(new TH1D(
+                TString::Format("h_origPt_%d", i), "orig p_{T} of jet; p_{T} [GeV]; entries", 
+                50, 0.0, 300.0
+	    ));
+            h_JECPt.push_back(new TH1D(
+                TString::Format("h_JECPt_%d", i), "user JEC  p_{T} of jet; p_{T} [GeV]; entries", 
+                50, 0.0, 300.0
+	    ));
+
+            h_smearedPt.push_back(new TH1D(
+                TString::Format("h_smearedPt_%d", i), "smeared p_{T} of jet; p_{T} [GeV]; entries", 
+                50, 0.0, 300.0
+            ));
+
+       
+	} //to here  🔧
+
+	    
 	for(int i=0; i < nHistsJets; i++){
 	    if(i < 3){
 		hjetsPTs.at(i)  = new TH1F(TString::Format("jetPT%d",(i+1))+trail, TString::Format("jet%d p_{T} [GeV]",i+1)+trail, 50, 0, 1500);
@@ -1343,6 +1419,45 @@ class ttHHanalyzer {
     
     TTree * _inputTree;
     float jetPT1, jetPT2, jetPT3, jetPT4, jetPT5, jetPT6, jetPT7, jetPT8, bjetPT1, bjetPT2, bjetPT3, bjetPT4, bjetPT5, bjetPT6, bjetPT7, bjetPT8, jetEta1, jetEta2, jetEta3, jetEta4, jetEta5, jetEta6, jetEta7, jetEta8, bjetEta1, bjetEta2, bjetEta3, bjetEta4, bjetEta5, bjetEta6, bjetEta7, bjetEta8, lightjetPT1, lightjetPT2, lightjetPT3, lightjetEta1, lightjetEta2, lightjetEta3, jetBTagDisc1, jetBTagDisc2, jetBTagDisc3, jetBTagDisc4, jetBTagDisc5, jetBTagDisc6, jetBTagDisc7, jetBTagDisc8, bjetBTagDisc1,bjetBTagDisc2, bjetBTagDisc3, bjetBTagDisc4, bjetBTagDisc5, bjetBTagDisc6, bjetBTagDisc7, bjetBTagDisc8, lightjetBTagDisc1, lightjetBTagDisc2, lightjetBTagDisc3, met, metPhi, metEta, averageDeltaRjj, averageDeltaRbb, averageDeltaEtajj, averageDeltaEtabb, minDeltaRjj, minDeltaRbb, maxDeltaEtajj, maxDeltaEtabb, jetAverageMass, bjetAverageMass, lightJetAverageMass, bjetAverageMassSqr, jetHT, bjetHT, lightjetHT, invMassHadW, invMassZ1, invMassZ2, invMassH1, invMassH2, chi2Higgs, chi2HiggsZ, chi2HadW, chi2Z, invMassHiggsZ1, invMassHiggsZ2, PTH1, PTH2, weight, aplanarity, sphericity, transSphericity, cValue, dValue, baplanarity, centralityjb, centralityjl, bsphericity, btransSphericity, bcValue, bdValue, leptonEta1, muonEta1, eleEta1, leptonPT1, muonPT1, elePT1, leptonEta2, muonEta2, eleEta2, leptonPT2, muonPT2, elePT2, diElectronMass, diMuonMass, leptonHT, ST, leptonCharge1, leptonCharge2, H0, H1, H2, H3, H4, bH0, bH1, bH2, bH3, bH4, R1, R2, R3, R4, bR1, bR2, bR3, bR4, maxPTmassjbb, maxPTmassjjj, minDeltaRpTbb, minDeltaRpTjj, minDeltaRpTbj, minDeltaRMassjj, minDeltaRMassbj, minDeltaRMassbb, averageDeltaRbj,  averageDeltaEtabj, minDeltaRbj, maxDeltaEtabj, bbjetHiggsMatched1, bbjetHiggsMatched2, bbjetHiggsMatched3, bbjetHiggsMatched4, bbjetHiggsMatched5, bbjetHiggsMatched6,bbjetHiggsMatcheddR1, bbjetHiggsMatcheddR2, bbjetHiggsMatcheddR3, bbjetHiggsMatcheddR4, bbjetHiggsMatcheddR5, bbjetHiggsMatcheddR6, bbjetMinChiHiggsIndex1, bbjetMinChiHiggsIndex2, bbjetMinChiHiggsIndex3, bbjetMinChiHiggsIndex4, bbjetMinChiHiggsIndex5, bbjetMinChiHiggsIndex6;
+//🔧
+////////////////////////////////////////////////////////////////////////////////////////    
+    // Variables for Trigger Path                                                        
+    ////bool passHadTrig;                                                               
+    bool passTrigger_HLT_IsoMu27; // Reference Muon Trigger to Calculate efficiency & SFs
+    bool passTrigger_HLT_PFHT1050;                                                      
+    //bool passTrigger_HLT_PFHT450_SixPFJet36_PFBTagDeepCSV_1p59;                          
+    //bool passTrigger_HLT_PFHT400_SixPFJet32_DoublePFBTagDeepCSV_2p94;                   
+    //bool passTrigger_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5;     
+    bool passTrigger_6J1T_B;
+    bool passTrigger_6J1T_CDEF;
+    bool passTrigger_6J2T_B;
+    bool passTrigger_6J2T_CDEF;
+    bool passTrigger_4J3T_B;
+    bool passTrigger_4J3T_CDEF;
+
+    int nMuons;                                                                          
+    int nElecs;
+    int nJets;                                                                          
+    int nbJets;                                                                         
+    float HT;                                                                           
+    float jetPt[30];                                                                    
+    float jetEta[30];                                                                   
+    float bTagScore[30];     
+
+    // Variables for B tag correction
+    int hadFlavs[30];
+    int partonFlavs[30];
+
+    unsigned int eventNumber;
+    unsigned int runNumber;
+     
+    float SampleWeight;
+    float PUWeight;
+    float L1PrefiringWeight;
+
+////////////////////////////////////////////////////////////////////////////////////////    
+//🔧
+
 
     int jetNumber, bjetNumber, lightjetNumber; 
     void initTree(sysName sysType = noSys, bool up = false){
@@ -1541,6 +1656,35 @@ class ttHHanalyzer {
 	_inputTree->Branch("bbjetMinChiHiggsIndex5", &bbjetMinChiHiggsIndex5, "bbjetMinChiHiggsIndex5/f");
 	_inputTree->Branch("bbjetMinChiHiggsIndex6", &bbjetMinChiHiggsIndex6, "bbjetMinChiHiggsIndex6/f");
 
+//🔧
+        // Branch for Trigger Path                                                        
+        _inputTree->Branch("passTrigger_HLT_IsoMu24", &passTrigger_HLT_IsoMu24, "passTrigger_HLT_IsoMu24/O");
+        _inputTree->Branch("passTrigger_HLT_Ele30_WPTight_Gsf", &passTrigger_HLT_Ele30_WPTight_Gsf, "passTrigger_HLT_Ele30_WPTight_Gsf/O");
+
+        _inputTree->Branch("nMuons", &nMuons, "nMuons/I");
+        _inputTree->Branch("nElecs", &nElecs, "nElecs/I");
+        _inputTree->Branch("nJets", &nJets, "nJets/I");
+        //_inputTree->Branch("nbJets", &nbJets, "nbJets/I");
+        _inputTree->Branch("HT", &HT, "HT/F");
+        _inputTree->Branch("jetPt", jetPt, "jetPt[nJets]/F");
+        _inputTree->Branch("jetEta", jetEta, "jetEta[nJets]/F");
+        _inputTree->Branch("bTagScore", bTagScore, "bTagScore[nJets]/F");
+
+        // Branch for B tagging correction
+        _inputTree->Branch("hadFlavs", hadFlavs, "hadFlavs[nJets]/I");
+        //_inputTree->Branch("partonFlavs", partonFlavs, "partonFlavs[nJets]/I");
+
+	_inputTree->Branch("eventNumber", &eventNumber, "eventNumber/i");
+        _inputTree->Branch("runNumber", &runNumber, "runNumber/i");
+
+	_inputTree->Branch("SampleWeight", &SampleWeight, "SampleWeight/F");
+	_inputTree->Branch("PUWeight", &PUWeight, "PUWeight/F");
+	_inputTree->Branch("L1PrefiringWeight", &L1PrefiringWeight, "L1PrefiringWeight/F");
+
+
+	    
+
+//🔧
 	_treeDirs = tmpDirs;
     }
 };	
