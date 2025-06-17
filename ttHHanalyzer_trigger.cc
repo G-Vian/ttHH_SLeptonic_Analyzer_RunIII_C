@@ -107,17 +107,19 @@ hCutFlow_w->Fill("noCut",_weight);
     _ev->fillObjects();
 
 // This trigger paths are for the SL channel!
-// This trigger paths are for the SL channel!
     if(_year == "2022" or _year == "2022EE" or _year == "2023" or _year == "2023B" or _year == "2024" ){
-	    if(_DataOrMC == "MC" or _DataOrMC == "Data"){thisEvent->setFilter(_ev->Flag_goodVertices ||				 
-		  					  _ev->Flag_globalSuperTightHalo2016Filter ||		
-		                                          _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||	
-		                                          _ev->Flag_BadPFMuonFilter ||
-                                                          _ev->Flag_BadPFMuonDzFilter ||	
-                                                          _ev->Flag_hfNoisyHitsFilter ||
-		                        		  _ev->Flag_eeBadScFilter ||				 
-		                                          _ev->Flag_ecalBadCalibFilter);
+	    if(_DataOrMC == "MC" or _DataOrMC == "Data"){ thisEvent->setFilter(true);
 
+	//if(_DataOrMC == "MC" or _DataOrMC == "Data"){thisEvent->setFilter(_ev->Flag_goodVertices ||				 
+	//	  					  _ev->Flag_globalSuperTightHalo2016Filter ||		
+	//	                                          _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||	
+	//	                                          _ev->Flag_BadPFMuonFilter ||
+        //                                                  _ev->Flag_BadPFMuonDzFilter ||	
+        //                                                  _ev->Flag_hfNoisyHitsFilter ||
+	//	                        		  _ev->Flag_eeBadScFilter ||				 
+	//	                                          _ev->Flag_ecalBadCalibFilter);
+
+							 
 	    thisEvent->setTrigger(
 				  _ev->HLT_Ele30_WPTight_Gsf ||
 				  _ev->HLT_IsoMu24);
