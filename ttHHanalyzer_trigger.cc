@@ -6,8 +6,14 @@
 #include "TVector3.h"
 #include "ttHHanalyzer_trigger.h"
 #include <iostream>
+#include "correction.h"// 🔧 
+
+
 using namespace std;
- 
+
+#include "Logger.h"  // 🔧 
+using namespace Logger; // 🔧 
+
 void ttHHanalyzer::performAnalysis(){
     loop(noSys, false);
     /*    getbJetEffMap();
@@ -84,9 +90,17 @@ void ttHHanalyzer::loop(sysName sysType, bool up) {
         events.push_back(currentEvent);
     }
     // events.back()->summarize();
-
+// 🔧 
+   if(debugCorrections) std::cout<<"debug : Before [ writeHistos() ]"<<std::endl;
     writeHistos();
+    if(debugCorrections) std::cout<<"debug : After writeHistos() & Before writeTree()"<<std::endl;
     writeTree();
+    if(debugCorrections) std::cout<<"debug : After writeTree() & Before hcutFlow()"<<std::endl;
+// 🔧 
+	
+ //   writeHistos(); // 🔧 
+ //   writeTree(); // 🔧 
+
 
     for (const auto &x : cutflow) {
         std::cout << x.first  // string (key)
@@ -95,8 +109,11 @@ void ttHHanalyzer::loop(sysName sysType, bool up) {
                   << std::endl;
     } 
 
-    hCutFlow->Write();
-    hCutFlow_w->Write();
+
+    hCutFlow->Write(); // 🔧 
+    if(debugCorrections) std::cout<<"debug : After hCutFlow() & Before hCutFlow_w()"<<std::endl; // 🔧 
+    hCutFlow_w->Write();// 🔧 
+    if(debugCorrections) std::cout<<"Problem : After hCutFlow_w()"<<std::endl; // 🔧 
 }
 
 void ttHHanalyzer::createObjects(event * thisEvent, sysName sysType, bool up){
@@ -108,16 +125,15 @@ hCutFlow_w->Fill("noCut",_weight);
 
 // This trigger paths are for the SL channel!
     if(_year == "2022" or _year == "2022EE" or _year == "2023" or _year == "2023B" or _year == "2024" ){
-	    if(_DataOrMC == "MC" or _DataOrMC == "Data"){ thisEvent->setFilter(true);
 
-	//if(_DataOrMC == "MC" or _DataOrMC == "Data"){thisEvent->setFilter(_ev->Flag_goodVertices ||				 
-	//	  					  _ev->Flag_globalSuperTightHalo2016Filter ||		
-	//	                                          _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||	
-	//	                                          _ev->Flag_BadPFMuonFilter ||
-        //                                                _ev->Flag_BadPFMuonDzFilter ||	
-        //                                              _ev->Flag_hfNoisyHitsFilter ||
-	//	                        		  _ev->Flag_eeBadScFilter ||				 
-	//	                                          _ev->Flag_ecalBadCalibFilter);
+	if(_DataOrMC == "MC" or _DataOrMC == "Data"){thisEvent->setFilter(_ev->Flag_goodVertices ||				 
+		  					  _ev->Flag_globalSuperTightHalo2016Filter ||		
+		                                          _ev->Flag_EcalDeadCellTriggerPrimitiveFilter ||	
+		                                          _ev->Flag_BadPFMuonFilter ||
+                                                        _ev->Flag_BadPFMuonDzFilter ||	
+                                                      _ev->Flag_hfNoisyHitsFilter ||
+		                        		  _ev->Flag_eeBadScFilter ||				 
+		                                          _ev->Flag_ecalBadCalibFilter);
 
 							 
 	    thisEvent->setTrigger(
@@ -217,69 +233,119 @@ hCutFlow_w->Fill("noCut",_weight);
 	}
     }
     thisEvent->orderLeptons();
-//Here it applies the CUT on the PT and ETA of the Jets, and the jets that are accepted are classified as b or light-quark jets
+// 🔧
     float dR = 0., deltaEta = 0., deltaPhi = 0.;
-    for(int i=0; i < jet.size(); i++){
-       	currentJet = new objectJet(jet[i].pt, jet[i].eta, jet[i].phi, jet[i].mass);
-	currentJet->bTagCSV = jet[i].btagPNetB;
-	currentJet->jetID = jet[i].jetId;
-	currentJet->jetPUid = jet[i].puId;
-	if(_sys && sysType == kJES){
-	    if(jet[i].btagPNetB > currentJet->getValbTagMedium(_year)){  	       
-		currentJet->scale(getSysJES(_hbJES, currentJet->getp4()->Pt()), up);
-	    } else {
-		currentJet->scale(getSysJES(_hJES, currentJet->getp4()->Pt()), up);
-	    }
-	    if(up) thisEvent->getMET()->subtractp4(currentJet->getOffset());
-	    else thisEvent->getMET()->addp4(currentJet->getOffset());
-	}else if(_sys && sysType == kJER){
-	    if(up) currentJet->scale(getSysJER(0.03));
-	    else currentJet->scale(getSysJER(0.001));
-	    thisEvent->getMET()->subtractp4(currentJet->getOffset());
-	}
-	if(currentJet->getp4()->Pt() > cut["jetPt"] && fabs(currentJet->getp4()->Eta()) < abs(cut["jetEta"]) && currentJet->jetID >= cut["jetID"]){
-	    if((currentJet->getp4()->Pt() < cut["maxPt_PU"] && currentJet->jetPUid >= cut["jetPUid"]) || (currentJet->getp4()->Pt() >= cut["maxPt_PU"])){
-		if(jet[i].btagPNetB <= currentJet->getValbTagLoose(_year)){  	     
-		    thisEvent->selectLightJet(currentJet);
-		} else if(jet[i].btagPNetB > currentJet->getValbTagMedium(_year)){ 
-		    thisEvent->selectbJet(currentJet);
-		    if(!_sys || sysType == noSys) _hbJetEff->Fill(currentJet->getp4()->Pt());
-		    if(_sys && sysType==kbTag){
-			e = _hbJetEff->GetBinContent(_hbJetEff->FindBin(currentJet->getp4()->Pt()));
-			if(e < cEps) e = cEps;
-			pe *= e; 
-			if(up)
-			    pes *= (1.+_hSysbTagM->GetBinContent(_hSysbTagM->FindBin(currentJet->getp4()->Pt())))*e;
-			else 
-			    pes *= (1.-_hSysbTagM->GetBinContent(_hSysbTagM->FindBin(currentJet->getp4()->Pt())))*e;
-		    }
-		} else {
-		    if(_sys && sysType==kbTag){
-			me = _hbJetEff->GetBinContent(_hbJetEff->FindBin(currentJet->getp4()->Pt()));
-			if(me < cEps) me = cEps;
-			else if(me == 1) me = 1 - cEps;
-			pme *= 1 - me;
-			if(up)
-			    pmes *= (1. - me * (1.+_hSysbTagM->GetBinContent(_hSysbTagM->FindBin(currentJet->getp4()->Pt()))));
-			else
-			    pmes *= (1. - me * (1.-_hSysbTagM->GetBinContent(_hSysbTagM->FindBin(currentJet->getp4()->Pt()))));
-		    }
-		}
-		thisEvent->selectJet(currentJet);
-		if(!_sys || sysType == noSys) _hJetEff->Fill(currentJet->getp4()->Pt());
-		if(jet[i].btagPNetB > currentJet->getValbTagLoose(_year)){       	   
-		    thisEvent->selectLoosebJet(currentJet);
-		}
-	    }	    
-	}
-    }
-    if(_sys && sysType==kbTag) thisEvent->setbTagSys( pes*pmes/(pe*pme));
-    else thisEvent->setbTagSys(1.);
+    for (int i = 0; i < (int)jet.size(); ++i) {
+        const auto& jetRaw = jet[i];
     
+        // 1) build the ORIGINAL jet (nanoAOD JEC already applied)
+        objectJet* origJet = new objectJet(
+            jetRaw.pt,
+            jetRaw.eta,
+            jetRaw.phi,
+            jetRaw.mass
+        );
+        origJet->bTagCSV    = jetRaw.btagDeepFlavB;
+        origJet->jetID      = jetRaw.jetId;
+        origJet->jetPUid    = jetRaw.puId;
+        origJet->hadFlav    = jetRaw.hadronFlavour;
+        origJet->partonFlav = jetRaw.partonFlavour;
     
-    //    thisEvent->setnVetoLepton( nVetoMuons + nVetoEle);
+        // === A) Recover RAW pT / mass ===
+        float ntuplePt  = origJet->getp4()->Pt();      // pt_nom
+        float rawFactor = jetRaw.rawFactor;            // nanoAOD‐provideds
+        float rawPt     = ntuplePt * (1.0 - rawFactor);
 
-	
+	////float oldraw = jetRaw.pt_nom * (1.0 - rawFactor);
+	////std::cout<<"!!!!! diff = "<<rawPt - oldraw<<std::endl; //이런 로직이면 차이 0
+        ////float rawMass   = origJet->getp4()->M() * rawFactor;
+        float rawMass   = origJet->getp4()->M() * (1.0 - rawFactor);
+
+        // store for validation (make sure objectJet has these members!)
+        origJet->origPt   = ntuplePt;
+        origJet->rawPt    = rawPt;
+        origJet->rawMass  = rawMass;
+    
+        if (debugCorrections) {
+            std::cout << "[JEC/JER] ntuplePt=" << ntuplePt
+                      << " rawFactor=" << rawFactor
+                      << " -> rawPt=" << rawPt << "\n";
+        }
+    
+        // === B) Get gen‐matched pT for JER ===
+        float genPt = -1.f;
+        if (jetRaw.genJetIdx >= 0 && jetRaw.genJetIdx < (int)genJet.size()) {
+            genPt = genJet[jetRaw.genJetIdx].pt;
+        }
+        origJet->genMatchedPt = genPt;
+    
+        // === C) Apply JEC ===
+        float rho = _ev->fixedGridRhoFastjetAll;
+        double jecSF = corrMgr->getJEC(
+//            _ev->run,                        // UInt_t run number
+            origJet->getp4()->Eta(),         // η
+            rawPt,                           // raw pT
+            jetRaw.area,                     // jet area
+            rho                              // ρ (for L1FastJet)
+        );
+        float ptJEC       = rawPt * jecSF;
+        origJet->jecSF    = jecSF;
+        origJet->ptJEC    = ptJEC;
+    
+        if (debugCorrections) {
+            std::cout << "[JEC] run=" << _ev->run
+	              << " origPt(ntuple's corrJet)=" << ntuplePt
+                      << " rawPt=" << rawPt
+                      << " eta=" << origJet->getp4()->Eta()
+                      << " jecSF=" << jecSF
+                      << " -> ptJEC=" << ptJEC << "\n";
+        }
+
+        // === D) Apply JER ===
+        double smearedPt = corrMgr->smearJER(
+            ptJEC,                           // JEC‐corrected pT
+            genPt,                           // gen‐matched pT (-1 if none)
+            origJet->getp4()->Eta(),         // η
+            rho,                             // ρ
+	    //"nominal"
+            "nom"
+        );
+        double jerSF      = (ptJEC > 0. ? smearedPt/ptJEC : 1.0);
+        origJet->jerSF    = jerSF;
+        origJet->ptJER    = smearedPt;
+    
+        if (debugCorrections) {
+            std::cout << "[JER] ptJEC=" << ptJEC
+                      << " genPt=" << genPt
+                      << " rho="   << rho
+                      << " jerSF=" << jerSF
+                      << " -> ptJER=" << smearedPt << "\n";
+        }
+        
+        objectJet* newJet = new objectJet(
+            smearedPt,
+            jetRaw.eta,
+            jetRaw.phi,
+            jetRaw.mass
+        );
+
+        newJet->origPt     = ntuplePt;
+        newJet->ptJEC      = ptJEC;
+        newJet->rawPt      = rawPt;
+        newJet->rawMass    = rawMass;
+        newJet->jerSF      = jerSF;
+	newJet->ptJER      = smearedPt;
+        newJet->jetPUid    = jetRaw.puId;
+        newJet->hadFlav    = jetRaw.hadronFlavour;
+        newJet->partonFlav = jetRaw.partonFlavour;
+
+	// === E) hand off to event ===
+        thisEvent->selectJet(newJet);
+	delete origJet;
+
+    }
+    thisEvent->orderJets();
+// 🔧	
     // Selecting b jets from genParticle info
     for (int i = 0; i < genPart.size(); i++){
        	currentGenPart = new objectGenPart(genPart[i].pt, genPart[i].eta, genPart[i].phi, genPart[i].mass);
@@ -700,12 +766,57 @@ void ttHHanalyzer::analyze(event *thisEvent){
 
 
 void ttHHanalyzer::process(event* thisEvent, sysName sysType, bool up){
+// 🔧
+    // 1) Golden JSON filter for data
+    if (_DataOrMC == "Data") {
+        int run  = _ev->run;
+        int lumi = _ev->luminosityBlock;
+        if (!corrMgr->passGoldenJSON(run, lumi)) {
+            if (debugCorrections) {
+                std::cout << "[GoldenJSON] Skipping event: run=" 
+                          << run << " lumi=" << lumi << std::endl;
+            }
+            return;
+        }
+        if (debugCorrections) {
+            std::cout << "[GoldenJSON] Accepted event: run=" 
+                      << run << " lumi=" << lumi << std::endl;
+        }
+    }
+
+    _PUWeight = 1.0;
+    // 2) Pileup reweighting for MC
+    if (_DataOrMC != "Data") {
+        float nTrue = _ev->Pileup_nTrueInt;
+        double puW  = corrMgr->getPUWeight(nTrue, "nominal");
+        _PUWeight   *= puW;
+        if (debugCorrections) {
+            std::cout << "[PU] nTrue=" << nTrue 
+                      << " weight=" << puW 
+                      << " -> evtWeight=" << _weight << std::endl;
+        }
+    }
+
+    // 3) L1 pre-firing weight
+    _L1PrefiringWeight = 1.0;
+    if (_DataOrMC != "Data") {
+	float preFireWgt = _ev->L1PreFiringWeight_Nom;
+	_L1PrefiringWeight  *= preFireWgt;
+        if (debugCorrections) {
+	    std::cout << "[L1PreFiring] weight=" << preFireWgt <<std::endl;
+	}
+    }
+
+    // 4) Build physics objects in thisEvent from the raw buffer
     createObjects(thisEvent, sysType, up);
-    if(!selectObjects(thisEvent))  return;
+
+    // 5) Final analysis steps: kinematics, histograms, tree
     analyze(thisEvent);
     fillHistos(thisEvent);
     fillTree(thisEvent);
-}
+
+}// 🔧
+
 
 
 void ttHHanalyzer::fillHistos(event * thisEvent){
@@ -925,7 +1036,25 @@ void ttHHanalyzer::fillHistos(event * thisEvent){
 */
     hLepCharge1->Fill(thisEvent->getSelLeptons()->at(0)->charge, _weight*thisEvent->getbTagSys());
 //    hLepCharge2->Fill(thisEvent->getSelLeptons()->at(1)->charge, _weight*thisEvent->getbTagSys());
-    
+
+   int nSel = thisEvent->getnSelJet(); // 🔧
+   for(int ih = 0; ih < nSel && ih < nHistsJets; ++ih){
+     float origPt    = thisEvent->getSelJets()->at(ih)->origPt;   // nanoAOD JEC 적용 후 pT
+     float smearedPt = thisEvent->getSelJets()->at(ih)->getp4()->Pt();           // JEC+JER 적용된 최종 pT
+     float ptJEC     = thisEvent->getSelJets()->at(ih)->ptJEC;
+
+     // A) 원본 pT
+     //h_origPt.at(ih)->Fill(origPt, _weight);
+     h_origPt.at(ih)->Fill(origPt);
+
+     h_JECPt.at(ih)->Fill(ptJEC);
+
+     // B) 스메어된 pT
+     //h_smearedPt.at(ih)->Fill(smearedPt, _weight);
+     h_smearedPt.at(ih)->Fill(smearedPt);
+   }// 🔧
+
+	
 }
 
 
@@ -950,6 +1079,19 @@ void ttHHanalyzer::writeHistos(){
 	hLightJetsBTagDisc.at(ih)->Write();
     }
 
+	   for(int ih=0; ih<nHistsJets; ih++){ // 🔧
+//        hjetsPTs.at(ih)->Write();
+//        hjetsEtas.at(ih)->Write();
+//        hjetsBTagDisc.at(ih)->Write();
+  
+        // JEC-only 원본 pT
+        h_origPt.at(ih)->Write();
+	h_JECPt.at(ih)->Write();
+
+        // JEC+JER 스메어된 pT
+        h_smearedPt.at(ih)->Write();
+
+    } // 🔧
     hInvMassHSingleMatched->Write();
     hInvMassHSingleNotMatched->Write();
     hChi2HiggsSingleNotMatched->Write();
@@ -1081,7 +1223,58 @@ void ttHHanalyzer::writeHistos(){
 //    hElePT2->Write(); 
 }
 void ttHHanalyzer::fillTree(event * thisEvent){
+// 🔧
+////////////////////////////////////////////////////////////////////////////////////////
+    // For Trigger Path
+    passTrigger_HLT_IsoMu24 = _ev->HLT_IsoMu24; // Reference Muon Trigger
+    passTrigger_HLT_Ele30_WPTight_Gsf = _ev->HLT_Ele30_WPTight_Gsf;
+    //passTrigger_HLT_PFHT450_SixPFJet36_PFBTagDeepCSV_1p59 = _ev->HLT_PFHT450_SixPFJet36_PFBTagDeepCSV_1p59;
+    //passTrigger_HLT_PFHT400_SixPFJet32_DoublePFBTagDeepCSV_2p94 = _ev->HLT_PFHT400_SixPFJet32_DoublePFBTagDeepCSV_2p94;
+    //passTrigger_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5 = _ev->HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5;
+    passTrigger_6J1T_B    = _ev->HLT_PFHT430_SixJet40_BTagCSV_p080;
+    passTrigger_6J1T_CDEF = _ev->HLT_PFHT430_SixPFJet40_PFBTagCSV_1p5;
+    passTrigger_6J2T_B    = _ev->HLT_PFHT380_SixJet32_DoubleBTagCSV_p075;
+    passTrigger_6J2T_CDEF = _ev->HLT_PFHT380_SixPFJet32_DoublePFBTagCSV_2p2;
+    passTrigger_4J3T_B    = _ev->HLT_HT300PT30_QuadJet_75_60_45_40_TripeCSV_p07;
+    passTrigger_4J3T_CDEF = _ev->HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0;
 
+    nMuons = thisEvent->getnSelMuon();
+    nElecs = thisEvent->getnSelElectron();
+    nJets = thisEvent->getnSelJet();
+    nbJets = thisEvent->getnbJet();
+    HT = thisEvent->getSumSelJetScalarpT();
+
+    // Fill the jet information [ It will fill the nJets && maximum 30th jets ]
+    for (int i = 0; i < nJets && i < 30; ++i) {
+        jetPt[i] = thisEvent->getSelJets()->at(i)->getp4()->Pt();
+        jetEta[i] = thisEvent->getSelJets()->at(i)->getp4()->Eta();
+        bTagScore[i] = thisEvent->getSelJets()->at(i)->bTagCSV;
+        hadFlavs[i] = thisEvent->getSelJets()->at(i)->hadFlav;
+        partonFlavs[i] = thisEvent->getSelJets()->at(i)->partonFlav;
+        // In the Event Buffer, you can find the struct jet_s which accesses to defined branch variables in NanoAODv9
+        // And then in the .hh files, you also can check variables like  bTagCSV or hadFlav as objectJet class's  member variable
+        // Then you can get the info at NanoAODv9 from jet_s structure and put them into the .hh's objectJet class member variable in the iteration of jets
+        // Finally here, you can store variables in the objectJet class's member variables into tree
+
+    } 
+    for (int i = nJets; i < 30; ++i) {
+        jetPt[i] = -999;
+        jetEta[i] = -999;
+        bTagScore[i] = -999;
+        hadFlavs[i] = -999;
+        partonFlavs[i] = -999;
+    }
+
+    eventNumber = _ev->event;
+    runNumber = _ev->run;
+ 
+    SampleWeight = _SampleWeight;
+    PUWeight = _PUWeight;
+    L1PrefiringWeight = _L1PrefiringWeight;
+
+////////////////////////////////////////////////////////////////////////////////////////
+   // 🔧
+	
    
     jetPT1 = thisEvent->getSelJets()->at(0)->getp4()->Pt();
     jetPT2 = thisEvent->getSelJets()->at(1)->getp4()->Pt();
